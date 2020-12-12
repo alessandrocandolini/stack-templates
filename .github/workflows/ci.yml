@@ -2,9 +2,9 @@ name: CI Linux
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
   workflow_dispatch: # enable manual execution
 
 jobs:
@@ -24,5 +24,5 @@ jobs:
         stack new haskell-toy-example simpler-new-template.hsfiles
     - name: Run the tests in the generated project
       run: | 
-        cd haskell-toy-example2
+        cd haskell-toy-example
         stack test 

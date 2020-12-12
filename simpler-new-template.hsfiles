@@ -1,27 +1,14 @@
 {-# START_FILE package.yaml #-}
 name:                {{name}}
 version:             0.1.0.0
-github:              "{{github-username}}{{^github-username}}githubuser{{/github-username}}/{{name}}"
-license:             BSD3
-author:              "{{author-name}}{{^author-name}}Author name here{{/author-name}}"
-maintainer:          "{{author-email}}{{^author-email}}example@example.com{{/author-email}}"
-copyright:           "{{copyright}}{{^copyright}}{{year}}{{^year}}2019{{/year}} {{author-name}}{{^author-name}}Author name here{{/author-name}}{{/copyright}}"
-
-extra-source-files:
-- README.md
-- ChangeLog.md
-
-# Metadata used when publishing your package
-# synopsis:            Short description of your package
-# category:            {{category}}{{^category}}Web{{/category}}
-
-# To avoid duplicated efforts in documentation and dealing with the
-# complications of embedding Haddock markup inside cabal files, it is
-# common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/{{github-username}}{{^github-username}}githubuser{{/github-username}}/{{name}}#readme>
 
 dependencies:
 - base >= 4.7 && < 5
+- text
+- containers
+
+default-extensions: 
+- OverloadedStrings
 
 library:
   source-dirs: src
@@ -48,7 +35,11 @@ tests:
     dependencies:
     - {{name}}
 
+
+verbatim:
+  cabal-version: 3.0
 {-# START_FILE test/Spec.hs #-}
+
 main :: IO ()
 main = putStrLn "Test suite not yet implemented"
 
