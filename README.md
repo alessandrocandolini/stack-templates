@@ -28,6 +28,8 @@ First, some of the files that `new-template` generates and that are mostly relev
 Second, the generated project already comes with a number of opinionated dependencies and (few) GHC extensions imported. 
 For testing, the generated project uses [Hspec](https://hspec.github.io/) with [hespec-discover](https://hackage.haskell.org/package/hspec-discover) for automatic discovery and run of the Hspec tests. It also imports [QuickCheck](https://hackage.haskell.org/package/QuickCheck) for property-based testing (quickcheck integrates seemlessly with Hspec). 
 
-Last but not list, `simpler-new-template` generates configuration yml for github actions (it generates a github action to automatically run `stack test` on PR and push on the `main` branch of the project) 
+Third, `simpler-new-template` generates configuration yml for github actions (it generates a github action to automatically run `stack test` on PR and push on the `main` branch of the project) 
+
+Last but not list, the generated project has a default `README.md` with more information on how to run, exec, compile and test a standard stack project.
 
 
