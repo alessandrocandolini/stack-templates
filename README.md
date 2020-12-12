@@ -4,10 +4,10 @@ Collections of simple templates for the [stack](https://docs.haskellstack.org/en
 
 ## stack-simpler-template
 
-Simpler template for stack projects, based on the [new-template](https://github.com/commercialhaskell/stack-templates/blob/master/new-template.hsfiles) but few major differences:
-* removing things that are not relevant for projects that are not intended to be published on hackage, 
-* and with few opinionated dependencies and GHC extensions already imported (for testing, etc)
-* built-in support for github actions 
+Simpler template for stack projects, based on the [new-template](https://github.com/commercialhaskell/stack-templates/blob/master/new-template.hsfiles) but with few major differences:
+* removing things that are not relevant for projects that are not intended to be published on hackage (eg, changelog, etc), 
+* adding few opinionated dependencies (eg, [hspec](https://hspec.github.io/) and [quickcheck](https://hackage.haskell.org/package/QuickCheck)) and GHC extensions (eg, [OverloadedStrings](https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/glasgow_exts.html#extension-OverloadedStrings))
+* built-in support for github actions (it generates a github action to automatically run `stack test` on PR and push on the `main` branch of the project) 
 
 ### How to create a new project 
 
