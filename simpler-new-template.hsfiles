@@ -78,6 +78,33 @@ main = someFunc
 {-# START_FILE README.md #-}
 # {{name}}
 
+{-# START_FILE .github/workflows/ci.yml #-}
+
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch: # enable manual execution
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Cancel previous runs
+      uses: styfle/cancel-workflow-action@0.5.0
+      with:
+        access_token: ${{ github.token }}
+
+    - uses: actions/checkout@v2
+    - name: Run tests 
+      run: |
+        stack test
+
 {-# START_FILE .gitignore #-}
 # Stack
 .stack-work
