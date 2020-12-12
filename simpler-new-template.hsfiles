@@ -62,9 +62,7 @@ spec = describe "Simple test" $ do
 
 
 {-# START_FILE src/Lib.hs #-}
-module Lib
-    ( someFunc
-    ) where
+module Lib where
 
 someFunc :: IO ()
 someFunc = putStrLn "someFunc"
@@ -81,5 +79,28 @@ main = someFunc
 # {{name}}
 
 {-# START_FILE .gitignore #-}
+# Stack
+.stack-work
+stack.yaml.lock
 .stack-work/
+.stack/
 *~
+*.swp
+.DS_Store
+# IDE
+.idea/
+# Aux files 
+*.o
+*.hi
+*.hie
+*.chi
+*.chs.h
+*.dyn_o
+*.dyn_hi
+*.prof
+*.aux
+*.hp
+*.eventlog
+cabal.project.local
+cabal.project.local~
+.ghc.environment.*
