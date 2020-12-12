@@ -10,11 +10,11 @@ stack <options> new <project-name> alessandrocandolini/<name of the correspondin
 ```
 assuming stack is installed in the system. Here, `<options>` is any command-line option available for stack, `<project-name>` is the name of the project that will be created and `<name of the corresponding hsfile> ` is the name of a `hsfile` in this repo. For example, 
 ```
-stack new haskell-hello-world alessandrocandolini/simpler-new-template
+stack new hello-world alessandrocandolini/simpler-new-template
 ```
 or 
 ```
-stack --resolver nightly-2020-12-12 new <project name> alessandrocandolini/simpler-new-template
+stack --resolver nightly-2020-12-12 new hello-world alessandrocandolini/simpler-new-template
 ```
 
 Refer to [Stack templates documentation](https://docs.haskellstack.org/en/stable/GUIDE/#templates) for more information on how to provide and use templates, and to the [official stack documentation](https://docs.haskellstack.org/en/stable/GUIDE/) for a comprehensive list of available options when running stack. 
