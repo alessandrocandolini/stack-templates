@@ -1,0 +1,28 @@
+name: CI Linux
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch: # enable manual execution
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Cancel previous runs
+      uses: styfle/cancel-workflow-action@0.5.0
+      with:
+        access_token: ${{ github.token }}
+
+    - uses: actions/checkout@v2
+    - name: Create a new toy project from template
+      run: |
+        stack new haskell-toy-example simpler-new-template.hsfiles
+    - name: Run the tests in the generated project
+      run: | 
+        cd haskell-toy-example
+        stack test 
