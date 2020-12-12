@@ -78,6 +78,17 @@ main = someFunc
 {-# START_FILE README.md #-}
 # {{name}}
 
+
+Assuming stack is installed in the system, to run the tests use
+```
+stack test 
+```
+
+to build the project use 
+```
+stack build 
+```
+
 {-# START_FILE .github/workflows/ci.yml #-}
 
 name: CI
