@@ -34,14 +34,32 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - {{name}}
+    - hspec
+    - hspec-discover
+    - QuickCheck
 
 
 verbatim:
   cabal-version: 3.0
 {-# START_FILE test/Spec.hs #-}
+{-# OPTIONS_GHC -F -pgmF hspec-discover #-}
 
-main :: IO ()
-main = putStrLn "Test suite not yet implemented"
+{-# START_FILE test/LibSpec.hs #-}
+module LibSpec where 
+
+import Test.Hspec
+import Test.Hspec.QuickCheck
+import Test.QuickCheck.Property
+import Lib
+
+spec :: Spec
+spec = describe "Simple test" $ do
+    
+    describe "1" $ do 
+       it "should be equal to 1" $
+          1 `shouldBe` 1
+
+
 
 {-# START_FILE src/Lib.hs #-}
 module Lib
