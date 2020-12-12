@@ -90,7 +90,6 @@ stack build
 ```
 
 {-# START_FILE .github/workflows/ci.yml #-}
-
 name: CI
 
 on:
@@ -109,7 +108,9 @@ jobs:
     - name: Cancel previous runs
       uses: styfle/cancel-workflow-action@0.5.0
       with:
+{{=<% %>=}}      
         access_token: ${{ github.token }}
+<%={{ }}=%>        
 
     - uses: actions/checkout@v2
     - name: Run tests 
