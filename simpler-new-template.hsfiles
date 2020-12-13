@@ -118,6 +118,22 @@ jobs:
       run: |
         stack test
 
+{-# START_FILE hie.yaml #-}
+cradle:
+  stack:
+    - path: "./src"
+      component: "{{name}}:lib"
+
+    - path: "./app/Main.hs"
+      component: "{{name}}:exe:{{name}}-exe"
+
+    - path: "./app/Paths_haskell_toy_example.hs"
+      component: "{{name}}:exe:{{name}}-exe"
+
+    - path: "./test"
+      component: "{{name}}:test:{{name}}-test"
+
+
 {-# START_FILE .gitignore #-}
 # Stack
 .stack-work
@@ -142,6 +158,8 @@ stack.yaml.lock
 *.hp
 *.eventlog
 {{name}}.cabal
+hls.log
 cabal.project.local
 cabal.project.local~
 .ghc.environment.*
+hls.log
