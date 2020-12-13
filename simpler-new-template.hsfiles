@@ -8,7 +8,7 @@ dependencies:
 - containers
 - safe
 
-default-extensions: 
+default-extensions:
 - OverloadedStrings
 
 library:
@@ -46,7 +46,7 @@ verbatim:
 {-# OPTIONS_GHC -F -pgmF hspec-discover #-}
 
 {-# START_FILE test/LibSpec.hs #-}
-module LibSpec where 
+module LibSpec where
 
 import Test.Hspec
 import Test.Hspec.QuickCheck
@@ -59,7 +59,7 @@ spec = describe "Simple test" $ do
      it "example-based unit test" $
         1 `shouldBe` 1
 
-     prop "property-based unit test" $ 
+     prop "property-based unit test" $
         \l -> reverse ( reverse l ) == ( l::[Int])
 
 
@@ -80,16 +80,35 @@ main = someFunc
 {-# START_FILE README.md #-}
 # {{name}}
 
+## How to build and run locally
 
-Assuming stack is installed in the system, to run the tests use
-```
-stack test 
-```
+The project uses the [Haskell tool stack](https://docs.haskellstack.org/en/stable/README/).
 
-to build the project use 
+Assuming `stack` is installed in the system, the project can be build by running
 ```
-stack build 
+stack build
 ```
+To build and also run the tests, run
+```
+stack test
+```
+which is equivalent to
+```
+stack build --test
+```
+To run the executable,
+```
+stack exec {{name}}-exe
+```
+For a faster feedback loop,
+```
+stack test --fast --file-watch
+```
+To run `ghci` (with a version compatible with the resolver) run
+```
+stack ghci
+```
+For more information, refer to the `stack` official docs.
 
 {-# START_FILE .github/workflows/ci.yml #-}
 -{{=<% %>=}}
@@ -124,22 +143,22 @@ jobs:
       with:
         ghc-version: ${{ matrix.ghc }}
         stack-version: ${{ matrix.stack }}
-        enable-stack: true      
+        enable-stack: true
 
     - uses: actions/cache@v1
       name: Cache ~/.stack
       with:
         path: ~/.stack
-        key: ${{ runner.os }}-${{ matrix.ghc }}-stack      
+        key: ${{ runner.os }}-${{ matrix.ghc }}-stack
 
     - uses: actions/checkout@v2
-    - name: Run tests 
+    - name: Run tests
       run: |
         stack test
 
     - name: Build artifacts
       run: |
-        stack build    
+        stack build
 -<%={{ }}=%>
 {-# START_FILE hie.yaml #-}
 cradle:
@@ -168,7 +187,7 @@ stack.yaml.lock
 .DS_Store
 # IDE
 .idea/
-# Aux files 
+# Aux files
 *.o
 *.hi
 *.hie
