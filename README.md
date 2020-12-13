@@ -1,3 +1,5 @@
+![Build](https://github.com/alessandrocandolini/stack-templates/workflows/CI%20Linux/badge.svg)
+
 # stack-templates
 
 Collections of project templates for the [stack](https://docs.haskellstack.org/en/stable/README/) Haskell build tool.
