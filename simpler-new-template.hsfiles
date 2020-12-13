@@ -54,11 +54,12 @@ import Lib
 
 spec :: Spec
 spec = describe "Simple test" $ do
-    
-    describe "1" $ do 
-       it "should be equal to 1" $
-          1 `shouldBe` 1
 
+     it "example-based unit test" $
+        1 `shouldBe` 1
+
+     prop "property-based unit test" $ 
+        \l -> reverse ( reverse l ) == ( l::[Int])
 
 
 {-# START_FILE src/Lib.hs #-}
