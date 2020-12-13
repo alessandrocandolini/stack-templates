@@ -140,6 +140,7 @@ stack.yaml.lock
 *.aux
 *.hp
 *.eventlog
+{{name}}.cabal
 cabal.project.local
 cabal.project.local~
 .ghc.environment.*
