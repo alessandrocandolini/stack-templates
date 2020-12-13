@@ -6,10 +6,15 @@ dependencies:
 - base >= 4.7 && < 5
 - text
 - containers
-- safe
 
 default-extensions:
 - OverloadedStrings
+
+ghc-options:
+  - -Wall
+  - -Wincomplete-record-updates
+  - -Wincomplete-uni-patterns
+  - -Wredundant-constraints
 
 library:
   source-dirs: src
