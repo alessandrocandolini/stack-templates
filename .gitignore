@@ -5,6 +5,7 @@ stack.yaml.lock
 .stack/
 *~
 *.swp
+*.swo
 .DS_Store
 # IDE
 .idea/
