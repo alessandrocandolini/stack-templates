@@ -164,7 +164,7 @@ jobs:
     - name: Build artifacts
       run: |
         stack build
--<%={{ }}=%>
+<%={{ }}=%>
 {-# START_FILE hie.yaml #-}
 cradle:
   stack:
