@@ -116,7 +116,7 @@ stack ghci
 For more information, refer to the `stack` official docs.
 
 {-# START_FILE .github/workflows/ci.yml #-}
--{{=<% %>=}}
+{{=<% %>=}}
 name: CI
 
 on:
