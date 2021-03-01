@@ -34,4 +34,6 @@ For testing, the generated project uses [Hspec](https://hspec.github.io/) with [
 
 Forth: `simpler-new-template` generates configuration yml for github actions (it generates a github action to automatically run `stack test` on PR and push on the `main` branch of the project) 
 
+## servant-server-template
 
+Generates a simple servant server running on wai. The server includes only an healthcheck endpoint GET `/status` returning a pre-hardcoded 200 `{"status":"ok"}` response. The project generates also a simple test to verify the implementation of the healthcheck endpoint. 
