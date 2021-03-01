@@ -6,6 +6,12 @@ dependencies:
 - base >= 4.7 && < 5
 - text
 - containers
+- servant
+- servant-server
+- aeson
+- generic-aeson
+- wai
+- warp
 
 default-extensions:
 - OverloadedStrings
@@ -43,7 +49,8 @@ tests:
     - hspec
     - hspec-discover
     - QuickCheck
-
+    - hspec-wai
+    - hspec-wai-json
 
 verbatim:
   cabal-version: 3.0
