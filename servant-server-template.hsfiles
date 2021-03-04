@@ -106,7 +106,9 @@ newtype StatusResponse = StatusResponse
 
 instance ToJSON StatusResponse
 
-type API = "status" :> Get '[JSON] StatusResponse
+type StatusEndpoint = "status" :> Get '[JSON] StatusResponse
+
+type API = StatusEndpoint 
 
 api :: Proxy API
 api = Proxy
@@ -118,10 +120,8 @@ startServer :: IO ()
 startServer = run 8080 app
 
 server :: Server API
-server = return ok
-
-ok :: StatusResponse
-ok = StatusResponse "ok"
+server = pure ok where 
+   ok = StatusResponse "ok"
 
 {-# START_FILE app/Main.hs #-}
 module Main where
