@@ -50,13 +50,13 @@ verbatim:
 {-# START_FILE test/Spec.hs #-}
 {-# OPTIONS_GHC -F -pgmF hspec-discover #-}
 
-{-# START_FILE test/LibSpec.hs #-}
-module LibSpec where
+{-# START_FILE test/AppSpec.hs #-}
+module AppSpec where
 
 import Test.Hspec
 import Test.Hspec.QuickCheck
 import Test.QuickCheck.Property
-import Lib
+import App
 
 spec :: Spec
 spec = describe "Simple test" $ do
@@ -68,19 +68,19 @@ spec = describe "Simple test" $ do
         \l -> reverse ( reverse l ) == ( l::[Int])
 
 
-{-# START_FILE src/Lib.hs #-}
-module Lib where
+{-# START_FILE src/App.hs #-}
+module App where
 
-someFunc :: IO ()
-someFunc = putStrLn "someFunc"
+program :: IO ()
+program = putStrLn "hello!"
 
 {-# START_FILE app/Main.hs #-}
 module Main where
 
-import Lib
+import App
 
 main :: IO ()
-main = someFunc
+main = program
 
 {-# START_FILE README.md #-}
 # {{name}}
