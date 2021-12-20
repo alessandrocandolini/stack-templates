@@ -1,0 +1,215 @@
+{-# START_FILE package.yaml #-}
+name:                {{name}}
+version:             0.1.0.0
+
+dependencies:
+- base >= 4.7 && < 5
+- text
+- containers
+- nonempty-containers
+- async
+- mtl
+- optparse-applicative
+- optparse-generic
+- aeson
+- generic-aeson
+
+default-extensions:
+- OverloadedStrings
+
+ghc-options:
+  - -Wall
+  - -Wincomplete-record-updates
+  - -Wincomplete-uni-patterns
+  - -Wredundant-constraints
+
+library:
+  source-dirs: src
+
+executables:
+  {{name}}-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - {{name}}
+
+tests:
+  {{name}}-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - {{name}}
+    - sydtest
+    - sydtest-discover
+    - QuickCheck
+
+
+verbatim:
+  cabal-version: 3.0
+{-# START_FILE test/Spec.hs #-}
+{-# OPTIONS_GHC -F -pgmF sydtest-discover #-}
+
+{-# START_FILE test/AppSpec.hs #-}
+module AppSpec where
+
+import App
+import Test.Syd
+import Test.QuickCheck.Property
+
+spec :: Spec
+spec = describe "Simple test" $ do
+
+     it "example-based unit test" $
+        1 == 1
+
+     prop "property-based unit test" $
+        \l -> reverse ( reverse l ) == ( l::[Int])
+
+
+{-# START_FILE src/App.hs #-}
+module App where
+
+program :: IO ()
+program = putStrLn "hello!"
+
+{-# START_FILE app/Main.hs #-}
+module Main where
+
+import App
+
+main :: IO ()
+main = program
+
+{-# START_FILE README.md #-}
+# {{name}}
+
+## How to build and run locally
+
+The project uses the [Haskell tool stack](https://docs.haskellstack.org/en/stable/README/).
+
+Assuming `stack` is installed in the system, the project can be build by running
+```
+stack build
+```
+To build and also run the tests, run
+```
+stack test
+```
+which is equivalent to
+```
+stack build --test
+```
+To run the executable,
+```
+stack exec {{name}}-exe
+```
+For a faster feedback loop,
+```
+stack test --fast --file-watch
+```
+To run `ghci` (with a version compatible with the resolver) run
+```
+stack ghci
+```
+For more information, refer to the `stack` official docs.
+
+{-# START_FILE .github/workflows/ci.yml #-}
+{{=<% %>=}}
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch: # enable manual execution
+
+jobs:
+  build:
+
+    name: ${{ matrix.os }} / ghc ${{ matrix.ghc }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        stack: ["2.5.1"]
+        ghc: ["8.10.4"]
+
+    steps:
+    - name: Cancel previous runs
+      uses: styfle/cancel-workflow-action@0.6.0
+      with:
+        access_token: ${{ github.token }}
+
+    - uses: haskell/actions/setup@v1 
+      name: Setup Haskell Stack
+      with:
+        ghc-version: ${{ matrix.ghc }}
+        stack-version: ${{ matrix.stack }}
+        enable-stack: true
+
+    - uses: actions/cache@v2
+      name: Cache ~/.stack
+      with:
+        path: ~/.stack
+        key: ${{ runner.os }}-${{ matrix.ghc }}-stack
+
+    - uses: actions/checkout@v2
+    - name: Run tests
+      run: |
+        stack test
+<%={{ }}=%>
+{-# START_FILE hie.yaml #-}
+cradle:
+  stack:
+    - path: "./src"
+      component: "{{name}}:lib"
+
+    - path: "./app/Main.hs"
+      component: "{{name}}:exe:{{name}}-exe"
+
+    - path: "./app/Paths_haskell_toy_example.hs"
+      component: "{{name}}:exe:{{name}}-exe"
+
+    - path: "./test"
+      component: "{{name}}:test:{{name}}-test"
+
+
+{-# START_FILE .gitignore #-}
+# Stack
+.stack-work
+stack.yaml.lock
+.stack-work/
+.stack/
+*~
+*.swp
+*.swo
+.DS_Store
+# IDE
+.idea/
+# Aux files
+*.o
+*.hi
+*.hie
+*.chi
+*.chs.h
+*.dyn_o
+*.dyn_hi
+*.prof
+*.aux
+*.hp
+*.eventlog
+{{name}}.cabal
+hls.log
+cabal.project.local
+cabal.project.local~
+.ghc.environment.*
+hls.log
