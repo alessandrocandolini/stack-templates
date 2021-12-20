@@ -47,28 +47,29 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - {{name}}
-    - sydtest
-    - sydtest-discover
+    - hspec
+    - hspec-discover
     - QuickCheck
 
 
 verbatim:
   cabal-version: 3.0
 {-# START_FILE test/Spec.hs #-}
-{-# OPTIONS_GHC -F -pgmF sydtest-discover #-}
+{-# OPTIONS_GHC -F -pgmF hspec-discover #-}
 
 {-# START_FILE test/AppSpec.hs #-}
 module AppSpec where
 
 import App
-import Test.Syd
+import Test.Hspec
+import Test.Hspec.QuickCheck
 import Test.QuickCheck.Property
 
 spec :: Spec
 spec = describe "Simple test" $ do
 
      it "example-based unit test" $
-        1 == 1
+        1 `shouldBe` 1
 
      prop "property-based unit test" $
         \l -> reverse ( reverse l ) == ( l::[Int])
