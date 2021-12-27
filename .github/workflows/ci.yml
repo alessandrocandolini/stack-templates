@@ -1,28 +1,32 @@
-name: CI Linux
+name: CI 
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, 'feature/*' ]
   pull_request:
     branches: [ main ]
   workflow_dispatch: # enable manual execution
 
+concurrency: 
+  group: ${{ github.ref }}
+  cancel-in-progress: true    
+
 jobs:
   build:
-
-    runs-on: ubuntu-latest
+    name: Build and test 
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        template: [simpler-new-template, servant-server-template, cli-template]  
+    runs-on: ${{ matrix.os }}
 
     steps:
-    - name: Cancel previous runs
-      uses: styfle/cancel-workflow-action@0.5.0
-      with:
-        access_token: ${{ github.token }}
 
-    - uses: actions/checkout@v2
-    - name: Create a new toy project from template
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Generate a new project from template ${{ matrix.template }}
       run: |
-        stack new haskell-toy-example simpler-new-template.hsfiles
-    - name: Run the tests in the generated project
-      run: | 
+        stack new haskell-toy-example ${{ matrix.template }}
         cd haskell-toy-example
-        stack test 
+        stack test
