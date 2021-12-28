@@ -57,10 +57,10 @@ verbatim:
 {-# START_FILE test/Spec.hs #-}
 {-# OPTIONS_GHC -F -pgmF hspec-discover #-}
 
-{-# START_FILE test/LibSpec.hs #-}
-module LibSpec where
+{-# START_FILE test/ServerSpec.hs #-}
+module ServerSpec where
 
-import Lib (app)
+import Server (app)
 import Test.Hspec (Spec, describe, it, shouldBe)
 import Test.Hspec.QuickCheck (prop)
 import Test.Hspec.Wai (get, shouldRespondWith, with)
@@ -83,12 +83,12 @@ spec = describe "Simple test" $ do
         let response = "{\"status\":\"ok\"}"
         get "/status" `shouldRespondWith` response
 
-{-# START_FILE src/Lib.hs #-}
+{-# START_FILE src/Server.hs #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Lib where
+module Server where
 
 import Data.Aeson (ToJSON)
 import Data.Data (Proxy (Proxy))
@@ -126,7 +126,7 @@ server = pure ok where
 {-# START_FILE app/Main.hs #-}
 module Main where
 
-import Lib
+import Server
 
 main :: IO ()
 main = startServer
@@ -188,7 +188,7 @@ jobs:
 
     steps:
     - name: Cancel previous runs
-      uses: styfle/cancel-workflow-action@0.6.0
+      uses: styfle/cancel-workflow-action@0.9.1
       with:
         access_token: ${{ github.token }}
 
