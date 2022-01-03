@@ -6,13 +6,12 @@ dependencies:
 - base >= 4.7 && < 5
 - text
 - containers
-- nonempty-containers
-- async
-- mtl
-- optparse-applicative
-- optparse-generic
+- servant
+- servant-server
 - aeson
 - generic-aeson
+- wai
+- warp
 
 default-extensions:
 - OverloadedStrings
@@ -50,44 +49,87 @@ tests:
     - hspec
     - hspec-discover
     - QuickCheck
-
+    - hspec-wai
+    - hspec-wai-json
 
 verbatim:
   cabal-version: 3.0
 {-# START_FILE test/Spec.hs #-}
 {-# OPTIONS_GHC -F -pgmF hspec-discover #-}
 
-{-# START_FILE test/AppSpec.hs #-}
-module AppSpec where
+{-# START_FILE test/ServerSpec.hs #-}
+module ServerSpec where
 
-import App
-import Test.Hspec
-import Test.Hspec.QuickCheck
-import Test.QuickCheck.Property
+import Server (app)
+import Test.Hspec (Spec, describe, it, shouldBe)
+import Test.Hspec.QuickCheck (prop)
+import Test.Hspec.Wai (get, shouldRespondWith, with)
+import Test.QuickCheck.Property ()
 
 spec :: Spec
 spec = describe "Simple test" $ do
+  it "example-based unit test" $
+    1 `shouldBe` 1
 
-     it "example-based unit test" $
-        1 `shouldBe` 1
+  prop "property-based unit test" $
+    \l -> reverse (reverse l) == (l :: [Int])
 
-     prop "property-based unit test" $
-        \l -> reverse ( reverse l ) == ( l::[Int])
+  with (return app) $ do
+    describe "GET /status" $ do
+      it "responds with 200" $ do
+        get "/status" `shouldRespondWith` 200
 
+      it "responds with ok status" $ do
+        let response = "{\"status\":\"ok\"}"
+        get "/status" `shouldRespondWith` response
 
-{-# START_FILE src/App.hs #-}
-module App where
+{-# START_FILE src/Server.hs #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE TypeOperators #-}
 
-program :: IO ()
-program = putStrLn "hello!"
+module Server where
+
+import Data.Aeson (ToJSON)
+import Data.Data (Proxy (Proxy))
+import GHC.Generics (Generic)
+import Network.Wai (Application)
+import Network.Wai.Handler.Warp (run)
+import Servant (Get, Server, (:>))
+import Servant.API (JSON)
+import Servant.Server (serve)
+
+newtype StatusResponse = StatusResponse
+  { status :: String
+  }
+  deriving (Generic, Eq, Show, Ord)
+
+instance ToJSON StatusResponse
+
+type StatusEndpoint = "status" :> Get '[JSON] StatusResponse
+
+type API = StatusEndpoint
+
+api :: Proxy API
+api = Proxy
+
+app :: Application
+app = serve api server
+
+startServer :: IO ()
+startServer = run 8080 app
+
+server :: Server API
+server = pure ok where
+   ok = StatusResponse "ok"
 
 {-# START_FILE app/Main.hs #-}
 module Main where
 
-import App
+import Server
 
 main :: IO ()
-main = program
+main = startServer
 
 {-# START_FILE README.md #-}
 # {{name}}
@@ -147,8 +189,8 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        stack: ["2.5.1"]
-        ghc: ["8.10.4"]
+        stack: ["2.7.3"]
+        ghc: ["8.10.7"]
 
     steps:
 
@@ -168,7 +210,7 @@ jobs:
     - name: Checkout repo 
       uses: actions/checkout@v2
 
-    - name: Build and run tests
+    - name: Run tests
       run: |
         stack test --coverage
 

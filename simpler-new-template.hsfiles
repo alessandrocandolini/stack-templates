@@ -144,34 +144,35 @@ jobs:
         ghc: ["8.10.7"]
 
     steps:
-
-    - uses: haskell/actions/setup@v1
-      name: Setup Haskell Stack
+    - name: Setup Haskell Stack
+      uses: haskell/actions/setup@v1
       with:
         ghc-version: ${{ matrix.ghc }}
         stack-version: ${{ matrix.stack }}
         enable-stack: true
 
-    - uses: actions/cache@v2
-      name: Cache ~/.stack
+    - name: Cache ~/.stack
+      uses: actions/cache@v2
       with:
         path: ~/.stack
-        key: ${{ runner.os }}-${{ matrix.ghc }}-stack
+        key: ${{ runner.os }}-${{ matrix.ghc }}-stack${{ matrix.stack }}
 
-    - uses: actions/checkout@v2
-      name: Run tests
+    - name: Checkout repo 
+      uses: actions/checkout@v2
+
+    - name: Build and run tests
       run: |
         stack test --coverage
 
-    - uses: 8c6794b6/hpc-codecov-action@v2
-      name: Generate coverage report
+    - name: Generate coverage report
+      uses: 8c6794b6/hpc-codecov-action@v2
       with:
         target: stack:{{name}}-test
         out: ./codecov.json
         verbose: true
 
-    - uses: codecov/codecov-action@v2
-      name: Send coverage report
+    - name: Send coverage report
+      uses: codecov/codecov-action@v2
       with:
         files: ./codecov.json
         fail_ci_if_error: false # optional (default = false)
@@ -184,6 +185,12 @@ cradle:
       component: "{{name}}:lib"
 
     - path: "./app/Main.hs"
+      component: "{{name}}:exe:{{name}}-exe"
+
+    - path: "./app/Main.hs"
+      component: "{{name}}:exe:{{name}}-exe"
+
+    - path: "./app/Paths_{{name}}.hs"
       component: "{{name}}:exe:{{name}}-exe"
 
     - path: "./test"
