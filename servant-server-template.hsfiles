@@ -108,7 +108,7 @@ instance ToJSON StatusResponse
 
 type StatusEndpoint = "status" :> Get '[JSON] StatusResponse
 
-type API = StatusEndpoint 
+type API = StatusEndpoint
 
 api :: Proxy API
 api = Proxy
@@ -120,7 +120,7 @@ startServer :: IO ()
 startServer = run 8080 app
 
 server :: Server API
-server = pure ok where 
+server = pure ok where
    ok = StatusResponse "ok"
 
 {-# START_FILE app/Main.hs #-}
@@ -150,11 +150,17 @@ which is equivalent to
 ```
 stack build --test
 ```
+To run with test coverage
+```
+stack test --coverage
+```
+which generates a textual and HTML report.
+
 To run the executable,
 ```
 stack exec {{name}}-exe
 ```
-For a faster feedback loop,
+For faster feedback loop,
 ```
 stack test --fast --file-watch
 ```
@@ -183,16 +189,12 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        stack: ["2.5.1"]
-        ghc: ["8.10.4"]
+        stack: ["2.7.3"]
+        ghc: ["8.10.7"]
 
     steps:
-    - name: Cancel previous runs
-      uses: styfle/cancel-workflow-action@0.9.1
-      with:
-        access_token: ${{ github.token }}
 
-    - uses: haskell/actions/setup@v1 
+    - uses: haskell/actions/setup@v1
       name: Setup Haskell Stack
       with:
         ghc-version: ${{ matrix.ghc }}
@@ -206,9 +208,23 @@ jobs:
         key: ${{ runner.os }}-${{ matrix.ghc }}-stack
 
     - uses: actions/checkout@v2
-    - name: Run tests
+      name: Run tests
       run: |
-        stack test
+        stack test --coverage
+
+    - uses: 8c6794b6/hpc-codecov-action@v2
+      name: Generate coverage report
+      with:
+        target: stack:{{name}}-test
+        out: ./codecov.json
+        verbose: true
+
+    - uses: codecov/codecov-action@v2
+      name: Send coverage report
+      with:
+        files: ./codecov.json
+        fail_ci_if_error: false # optional (default = false)
+        verbose: true
 <%={{ }}=%>
 {-# START_FILE hie.yaml #-}
 cradle:
@@ -217,9 +233,6 @@ cradle:
       component: "{{name}}:lib"
 
     - path: "./app/Main.hs"
-      component: "{{name}}:exe:{{name}}-exe"
-
-    - path: "./app/Paths_haskell_toy_example.hs"
       component: "{{name}}:exe:{{name}}-exe"
 
     - path: "./test"
@@ -255,4 +268,3 @@ hls.log
 cabal.project.local
 cabal.project.local~
 .ghc.environment.*
-hls.log
