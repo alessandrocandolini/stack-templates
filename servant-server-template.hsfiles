@@ -217,7 +217,7 @@ jobs:
     - name: Generate coverage report
       uses: 8c6794b6/hpc-codecov-action@v2
       with:
-        target: stack:{{name}}-test
+        target: stack:<%name%>-test
         out: ./codecov.json
         verbose: true
 
