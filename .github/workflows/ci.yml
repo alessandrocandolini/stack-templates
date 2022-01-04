@@ -22,11 +22,17 @@ jobs:
 
     steps:
 
-    - name: Checkout
-      uses: actions/checkout@v2
+      - name: Install act for testing 
+        uses: actionsflow/setup-act@v1
+        with:
+          version: '0.2.25'
 
-    - name: Generate a new project from template ${{ matrix.template }}
-      run: |
-        stack new haskell-toy-example ${{ matrix.template }}
-        cd haskell-toy-example
-        stack test
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Generate a new project from template ${{ matrix.template }}
+        run: |
+          stack new haskell-toy-example ${{ matrix.template }}
+          cd haskell-toy-example
+          stack test
+          act -n -P ubuntu-latest=catthehacker/ubuntu:act-latest
