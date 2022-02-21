@@ -15,6 +15,7 @@ ghc-options:
   - -Wincomplete-record-updates
   - -Wincomplete-uni-patterns
   - -Wredundant-constraints
+  - -Wunused-packages
 
 library:
   source-dirs: src
