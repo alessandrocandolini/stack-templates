@@ -152,8 +152,8 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        stack: ["2.5.1"]
-        ghc: ["8.10.4"]
+        stack: ["2.7.5"]
+        ghc: ["9.0.2"]
 
     steps:
 
