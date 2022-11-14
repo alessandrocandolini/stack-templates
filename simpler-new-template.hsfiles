@@ -150,7 +150,13 @@ jobs:
 
     steps:
     - name: Checkout repo 
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
+
+    - name: Cache ~/.stack
+      uses: actions/cache@v3
+      with:
+        path: ~/.stack
+        key: ${{ runner.os }}-${{ matrix.ghc }}-stack${{ matrix.stack }}
 
     - name: Setup Haskell Stack
       uses: haskell/actions/setup@v1
@@ -159,21 +165,19 @@ jobs:
         stack-version: ${{ matrix.stack }}
         enable-stack: true
 
-    - name: Cache ~/.stack
-      uses: actions/cache@v2
-      with:
-        path: ~/.stack
-        key: ${{ runner.os }}-${{ matrix.ghc }}-stack${{ matrix.stack }}
-
     - name: Install dependencies
+      if: steps.cache.outputs.cache-hit != 'true'
+      timeout-minutes: 15
       run: |
         stack build --system-ghc --test --no-run-tests --only-dependencies
 
     - name: Run tests with coverage
+      timeout-minutes: 15
       run: |
         stack test --system-ghc --test --coverage --fast
 
     - name: Build
+      timeout-minutes: 15
       run: |
         stack build --system-ghc --test --no-run-tests
 
