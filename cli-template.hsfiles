@@ -153,8 +153,8 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        stack: ["2.7.5"]
-        ghc: ["9.0.2"]
+        stack: ["2.9.1"]
+        ghc: ["9.2.5"]
 
     steps:
 
@@ -194,7 +194,7 @@ jobs:
         stack build --system-ghc --test --no-run-tests
 
     - name: Generate coverage report
-      uses: 8c6794b6/hpc-codecov-action@v2
+      uses: 8c6794b6/hpc-codecov-action@v3
       with:
         target: stack:<%name%>-test
         out: ./codecov.json

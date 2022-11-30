@@ -145,8 +145,8 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        stack: ["2.7.5"]
-        ghc: ["9.0.2"]
+        stack: ["2.9.1"]
+        ghc: ["9.2.5"]
 
     steps:
     - name: Checkout repo 
@@ -189,7 +189,7 @@ jobs:
         verbose: true
 
     - name: Send coverage report
-      uses: codecov/codecov-action@v2
+      uses: codecov/codecov-action@v3
       with:
         files: ./codecov.json
         fail_ci_if_error: false # optional (default = false)
