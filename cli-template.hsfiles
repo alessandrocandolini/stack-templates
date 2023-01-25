@@ -194,7 +194,7 @@ jobs:
         stack build --system-ghc --test --no-run-tests
 
     - name: Generate coverage report
-      uses: 8c6794b6/hpc-codecov-action@v3
+      uses: 8c6794b6/hpc-codecov-action@v2
       with:
         target: stack:<%name%>-test
         out: ./codecov.json
