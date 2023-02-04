@@ -53,12 +53,18 @@ tests:
     - QuickCheck
     - neat-interpolation
 
-
 verbatim:
   cabal-version: 3.0
 {-# START_FILE test/Spec.hs #-}
 {-# OPTIONS_GHC -F -pgmF hspec-discover #-}
 
+{-# START_FILE test/SpecHook.hs #-}
+module SpecHook where
+
+import Test.Hspec ( parallel, Spec )
+
+hook :: Spec -> Spec
+hook = parallel
 {-# START_FILE test/AppSpec.hs #-}
 module AppSpec where
 
@@ -76,12 +82,45 @@ spec = describe "Simple test" $ do
      prop "property-based unit test" $
         \l -> reverse ( reverse l ) == ( l::[Int])
 
+{-# START_FILE src/ArgsSpec.hs #-}
+module ArgsSpec where
+
+import Args
+import Test.Hspec
+import Test.Hspec.QuickCheck
+import Test.QuickCheck.Property
+import Options.Applicative (ParserResult(Success))
+import Options.Applicative (ParserResult(Failure))
+
+
+parseArgsMaybe = transform . parseArgs where
+  transform (Success a) = Right a
+  transform (Failure failure) = Left (show failure)
+  transform _ = Left "completion"
+
+
+spec :: Spec
+spec = describe "Args parser" $ do
+
+     it "is able to parse subcommand (verbose flag on)" $
+        parseArgsMaybe ["-v", "doctor", "http://xyz"] `shouldBe` Right (Args (Flags Verbose) Doctor)
+
+     it "is able to parse subcommand (verbose flag off)" $
+        parseArgsMaybe ["doctor"] `shouldBe` Right (Args (Flags NotVerbose) (Doctor))
 
 {-# START_FILE src/App.hs #-}
 module App where
 
+import Args
+import Options.Applicative
+import System.Environment (getArgs)
+
 program :: IO ()
-program = putStrLn "hello!"
+program =
+  getArgs >>= (handleParseResult . parseArgs) >>= program' 
+
+program' :: Args -> IO()
+program' _ = putStrLn "hello!"
 
 {-# START_FILE app/Main.hs #-}
 module Main where
@@ -91,6 +130,41 @@ import App
 main :: IO ()
 main = program
 
+{-# START_FILE src/Args.hs #-}
+module Args where
+import Options.Applicative
+
+data Args = Args Flags Command deriving (Eq,Show)
+
+data Command
+    = Doctor deriving (Eq, Show)
+
+data Verbosity = Verbose | NotVerbose deriving (Eq,Show)
+
+newtype Flags = Flags Verbosity deriving (Eq,Show)
+
+argsParser :: Parser Args
+argsParser = Args <$> flags <*> commands
+
+verbosity :: Parser Verbosity
+verbosity = flag NotVerbose Verbose
+  ( long "verbose" <> short 'v' <> help "Enable verbose output")
+
+flags :: Parser Flags
+flags = Flags <$> verbosity
+
+commands :: Parser Command
+commands = hsubparser
+  ( command "doctor" (info (pure Doctor) ( progDesc "check the CLI is working" ))
+  )
+
+withInfo :: Parser a -> String -> ParserInfo a
+withInfo p s = info (helper <*> p) (fullDesc  <> progDesc s)
+
+parseArgs :: [String] -> ParserResult Args
+parseArgs = execParserPure preferences parserInfo where
+   parserInfo = withInfo argsParser "Deep links analyser"
+   preferences = prefs (disambiguate <> showHelpOnEmpty <> showHelpOnError)
 {-# START_FILE README.md #-}
 # {{name}}
 
@@ -120,6 +194,11 @@ To run the executable,
 ```
 stack exec {{name}}-exe
 ```
+or passing arguments
+```
+stack exec {{name}}-exe -- -v doctor
+```
+
 For faster feedback loop,
 ```
 stack test --fast --file-watch
@@ -175,7 +254,6 @@ jobs:
         ghc-version: ${{ matrix.ghc }}
         stack-version: ${{ matrix.stack }}
         enable-stack: true
-
 
     - name: Install dependencies
       if: steps.cache.outputs.cache-hit != 'true'
