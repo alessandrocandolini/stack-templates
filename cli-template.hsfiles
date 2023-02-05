@@ -82,7 +82,7 @@ spec = describe "Simple test" $ do
      prop "property-based unit test" $
         \l -> reverse ( reverse l ) == ( l::[Int])
 
-{-# START_FILE src/ArgsSpec.hs #-}
+{-# START_FILE test/ArgsSpec.hs #-}
 module ArgsSpec where
 
 import Args
