@@ -17,7 +17,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        template: [simpler-new-template, servant-server-template, cli-template]
+        template: [servant-server-template, cli-template]
     runs-on: ${{ matrix.os }}
 
     steps:
