@@ -92,18 +92,16 @@ import Test.QuickCheck.Property
 import Options.Applicative (ParserResult(Success))
 import Options.Applicative (ParserResult(Failure))
 
-
 parseArgsMaybe = transform . parseArgs where
   transform (Success a) = Right a
   transform (Failure failure) = Left (show failure)
   transform _ = Left "completion"
 
-
 spec :: Spec
 spec = describe "Args parser" $ do
 
      it "is able to parse subcommand (verbose flag on)" $
-        parseArgsMaybe ["-v", "doctor", "http://xyz"] `shouldBe` Right (Args (Flags Verbose) Doctor)
+        parseArgsMaybe ["-v", "doctor"] `shouldBe` Right (Args (Flags Verbose) Doctor)
 
      it "is able to parse subcommand (verbose flag off)" $
         parseArgsMaybe ["doctor"] `shouldBe` Right (Args (Flags NotVerbose) (Doctor))
@@ -111,16 +109,16 @@ spec = describe "Args parser" $ do
 {-# START_FILE src/App.hs #-}
 module App where
 
-import Args
-import Options.Applicative
+import Args ( Args, parseArgs )
+import Options.Applicative ( handleParseResult )
 import System.Environment (getArgs)
 
 program :: IO ()
 program =
-  getArgs >>= (handleParseResult . parseArgs) >>= program' 
+  getArgs >>= (handleParseResult . parseArgs) >>= program'
 
 program' :: Args -> IO()
-program' _ = putStrLn "hello!"
+program' = const (putStrLn "hello!")
 
 {-# START_FILE app/Main.hs #-}
 module Main where
