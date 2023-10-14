@@ -161,7 +161,7 @@ withInfo p s = info (helper <*> p) (fullDesc  <> progDesc s)
 
 parseArgs :: [String] -> ParserResult Args
 parseArgs = execParserPure preferences parserInfo where
-   parserInfo = withInfo argsParser "Deep links analyser"
+   parserInfo = withInfo argsParser "CLI title"
    preferences = prefs (disambiguate <> showHelpOnEmpty <> showHelpOnError)
 {-# START_FILE README.md #-}
 # {{name}}
