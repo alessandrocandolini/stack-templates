@@ -1,4 +1,4 @@
-![Build](https://github.com/alessandrocandolini/stack-templates/workflows/CI%20Linux/badge.svg)
+[![CI](https://github.com/alessandrocandolini/stack-templates/actions/workflows/ci.yml/badge.svg)](https://github.com/alessandrocandolini/stack-templates/actions/workflows/ci.yml)
 
 # stack-templates
 
