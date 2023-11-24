@@ -109,7 +109,7 @@ spec = describe "Args parser" $ do
 {-# START_FILE src/App.hs #-}
 module App where
 
-import Args ( Args, parseArgs )
+import Args 
 import Options.Applicative ( handleParseResult )
 import System.Environment (getArgs)
 import Day1 ( program )
@@ -127,7 +127,6 @@ program :: IO ()
 program =
   getArgs >>= (handleParseResult . parseArgs) >>= program'
 
-program' :: Args -> IO()
 program' :: Args -> IO ()
 program' (Args 1 f) = Day1.program f
 program' (Args 2 f) = Day2.program f
@@ -296,7 +295,7 @@ data Answer = Answer deriving (Eq, Show)
 logic :: T.Text -> Answer
 logic = const Answer
 {-# START_FILE src/DayN.hs #-}
-module Day1 where
+module DayN where
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
