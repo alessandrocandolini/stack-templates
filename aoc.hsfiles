@@ -173,7 +173,8 @@ parseArgs :: [String] -> ParserResult Args
 parseArgs = execParserPure preferences parserInfo where
    parserInfo = withInfo argsParser "Advent of code"
    preferences = prefs (disambiguate <> showHelpOnEmpty <> showHelpOnError)
-{-# START_FILE app/Day1.hs #-}
+
+{-# START_FILE src/Day1.hs #-}
 module Day1 where
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
@@ -186,7 +187,7 @@ data Answer = Answer deriving (Eq, Show)
 logic :: T.Text -> Answer
 logic = const Answer
 
-{-# START_FILE app/Day2.hs #-}
+{-# START_FILE src/Day2.hs #-}
 module Day2 where
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
@@ -198,7 +199,7 @@ data Answer = Answer deriving (Eq, Show)
 
 logic :: T.Text -> Answer
 logic = const Answer
-{-# START_FILE app/Day3.hs #-}
+{-# START_FILE src/Day3.hs #-}
 module Day3 where
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
@@ -210,7 +211,7 @@ data Answer = Answer deriving (Eq, Show)
 
 logic :: T.Text -> Answer
 logic = const Answer
-{-# START_FILE app/Day4.hs #-}
+{-# START_FILE src/Day4.hs #-}
 module Day4 where
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
@@ -222,7 +223,7 @@ data Answer = Answer deriving (Eq, Show)
 
 logic :: T.Text -> Answer
 logic = const Answer
-{-# START_FILE app/Day5.hs #-}
+{-# START_FILE src/Day5.hs #-}
 module Day5 where
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
@@ -234,7 +235,7 @@ data Answer = Answer deriving (Eq, Show)
 
 logic :: T.Text -> Answer
 logic = const Answer
-{-# START_FILE app/Day6.hs #-}
+{-# START_FILE src/Day6.hs #-}
 module Day6 where
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
@@ -246,7 +247,7 @@ data Answer = Answer deriving (Eq, Show)
 
 logic :: T.Text -> Answer
 logic = const Answer
-{-# START_FILE app/Day7.hs #-}
+{-# START_FILE src/Day7.hs #-}
 module Day7 where
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
@@ -258,7 +259,7 @@ data Answer = Answer deriving (Eq, Show)
 
 logic :: T.Text -> Answer
 logic = const Answer
-{-# START_FILE app/Day8.hs #-}
+{-# START_FILE src/Day8.hs #-}
 module Day8 where
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
@@ -270,7 +271,7 @@ data Answer = Answer deriving (Eq, Show)
 
 logic :: T.Text -> Answer
 logic = const Answer
-{-# START_FILE app/Day9.hs #-}
+{-# START_FILE src/Day9.hs #-}
 module Day9 where
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
@@ -282,7 +283,7 @@ data Answer = Answer deriving (Eq, Show)
 
 logic :: T.Text -> Answer
 logic = const Answer
-{-# START_FILE app/Day10.hs #-}
+{-# START_FILE src/Day10.hs #-}
 module Day10 where
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
@@ -294,7 +295,7 @@ data Answer = Answer deriving (Eq, Show)
 
 logic :: T.Text -> Answer
 logic = const Answer
-{-# START_FILE app/DayN.hs #-}
+{-# START_FILE src/DayN.hs #-}
 module Day1 where
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
