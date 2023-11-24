@@ -12,7 +12,7 @@ dependencies:
 - optparse-applicative
 - optparse-generic
 - aeson
-- generic-aeson
+- neat-interpolation
 
 default-extensions:
 - OverloadedStrings
@@ -51,7 +51,6 @@ tests:
     - hspec
     - hspec-discover
     - QuickCheck
-    - neat-interpolation
 
 verbatim:
   cabal-version: 3.0
