@@ -27,4 +27,9 @@ Generates a simple CLI application, with command-line arguments parsed using opt
 
 ## servant-server-template
 
-Generates a simple servant server running on wai. The server includes only an healthcheck endpoint GET `/status` returning a pre-hardcoded 200 `{"status":"ok"}` response. The project generates also a simple test to verify the implementation of the healthcheck endpoint. 
+Generates a simple servant server running on wai. The server includes only an healthcheck endpoint GET `/status` returning a pre-hardcoded 200 `{"status":"ok"}` response. The project generates also a simple test to verify the implementation of the healthcheck endpoint.
+
+
+## AOC
+
+There is a variant of `cli-template` that generates a project for Advent of Code. However this template is not as maintained as the other ones, and we don't run CI tests to save time.
