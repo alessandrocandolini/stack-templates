@@ -33,3 +33,8 @@ Generates a simple servant server running on wai. The server includes only an he
 ## AOC
 
 There is a variant of `cli-template` that generates a project for Advent of Code. However this template is not as maintained as the other ones, and we don't run CI tests to save time.
+
+## (warning) Codecov upload
+
+Tokenless code coverage report upload to [codecov](https://app.codecov.io/) is no longer supported by [codecov-action v4](https://github.com/codecov/codecov-action). 
+The templates generate a non-failing step as part of the github action CI, but if you want the coverage report uploaded you have to set the env variable `CODECOV_TOKEN` under the repo Settings > Secrets > Action > New repository secret

@@ -670,6 +670,8 @@ jobs:
         files: ./codecov.json
         fail_ci_if_error: false # optional (default = false)
         verbose: true
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 <%={{ }}=%>
 {-# START_FILE hie.yaml #-}
 cradle:
