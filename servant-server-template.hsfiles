@@ -6,12 +6,19 @@ dependencies:
 - base >= 4.7 && < 5
 - text
 - containers
-- servant
-- servant-server
+- nonempty-containers
 - aeson
+- aeson-pretty
 - generic-aeson
+- safe
+- either
+- witherable
+- envparse
+- neat-interpolation
 - wai
 - warp
+- servant
+- servant-server
 
 default-extensions:
 - OverloadedStrings

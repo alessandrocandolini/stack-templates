@@ -8,10 +8,16 @@ dependencies:
 - containers
 - nonempty-containers
 - async
-- mtl
 - optparse-applicative
-- optparse-generic
 - aeson
+- aeson-pretty
+- generic-aeson
+- safe
+- either
+- megaparsec
+- witherable
+- ansi-terminal
+- envparse
 - neat-interpolation
 
 default-extensions:
