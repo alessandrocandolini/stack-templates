@@ -28,7 +28,7 @@ library:
   source-dirs: src
 
 executables:
-  {{name}}-exe:
+  {{name}}:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
@@ -167,48 +167,58 @@ parseArgs = execParserPure preferences parserInfo where
 
 ## How to build and run locally
 
-The project uses the [Haskell tool stack](https://docs.haskellstack.org/en/stable/README/).
+The project uses the [Haskell tool stack](https://docs.haskellstack.org/en/stable/README/). The recommended way to install stack is by using [ghcup](https://www.haskell.org/ghcup/).
+It's also possible to use [the nix package manager](https://nixos.org/), but this project does not provide a nix configuration file.
 
-Assuming `stack` is installed in the system, the project can be build by running
+Assuming `stack` is installed in the system, to **build** the project use
 ```
 stack build
 ```
-To build and also run the tests, run
+To **build and run the tests**, run
 ```
 stack test
 ```
-which is equivalent to
+or equivalently
 ```
 stack build --test
 ```
-To run with test coverage
+For **faster feedback loop** during development, it's possible to run tests continuously on every file change:
+```
+stack test --fast --file-watch
+```
+To run tests with **test coverage** instrumentation,
 ```
 stack test --coverage
 ```
 which generates a textual and HTML report.
 
-To run the executable,
+Note: Tests are run in the CI and test coverage reports are automatically uploaded to codecov.
+
+To **run** the executable via slack,
 ```
-stack exec {{name}}-exe
+stack exec {{name}}
 ```
 or passing arguments
 ```
-stack exec {{name}}-exe -- -v doctor
+stack exec {{name}} -- -v doctor
 ```
 
-For faster feedback loop,
+To **install** the executable under `~/.local/bin`,
 ```
-stack test --fast --file-watch
+stack install
 ```
-To run `ghci` (with a version compatible with the resolver) run
+and the executable can be run with `{{name}}` assuming `~/.local/bin` is in the `$PATH` variable.
+
+To run a version of **ghci** compatible with the resolver
 ```
 stack ghci
 ```
-For more information, refer to the `stack` official docs.
+For more information about how to use `stack`, refer to the [official docs](https://docs.haskellstack.org/en/stable/).
 
+This projects uses [optparse-applicative](https://hackage.haskell.org/package/optparse-applicative) to implement command-line arguments parsing. Optparse-applicative automatically generates an helper from code. It's recommended to use the generated helper to explore all the available CLI options.
 {-# START_FILE .github/workflows/ci.yml #-}
 {{=<% %>=}}
-name: CI
+name: Compile and run tests
 
 on:
   push:
@@ -234,16 +244,28 @@ jobs:
 
     steps:
 
-    - name: Checkout repo 
+    - name: Checkout repo
       uses: actions/checkout@v4
 
-    - name: Restore from cache
+    - name: Cache stack installation
       uses: actions/cache@v4
       with:
         path: |
-          ~/.stack
-          ~/.ghcup
-        key: ${{ runner.os }}-ghc-${{ matrix.ghc }}-stack-${{ matrix.stack }}-${{ hashFiles('stack.yaml') }}
+          ~/.stack/build-plan
+          ~/.stack/indices
+          ~/.stack/snapshots
+          ~/.stack/global-project/.stack-work/install
+        key: ${{ runner.os }}-ghc-${{ matrix.ghc }}-stack-${{ matrix.stack }}-${{ hashFiles('stack.yaml', 'stack.yaml.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-ghc-${{ matrix.ghc }}-stack-${{ matrix.stack }}-
+
+    - name: Cache GHC installation
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.ghcup/ghc/${{ matrix.ghc }}
+          ~/.ghcup/bin/stack-${{ matrix.stack }}
+        key: ${{ runner.os }}-ghc-${{ matrix.ghc }}-stack-${{ matrix.stack }}
 
     - name: Setup Haskell Stack
       uses: haskell-actions/setup@v2
@@ -284,22 +306,6 @@ jobs:
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 <%={{ }}=%>
-{-# START_FILE hie.yaml #-}
-cradle:
-  stack:
-    - path: "./src"
-      component: "{{name}}:lib"
-
-    - path: "./app/Main.hs"
-      component: "{{name}}:exe:{{name}}-exe"
-
-    - path: "./app/Paths_{{name}}.hs"
-      component: "{{name}}:exe:{{name}}-exe"
-
-    - path: "./test"
-      component: "{{name}}:test:{{name}}-test"
-
-
 {-# START_FILE .gitignore #-}
 # Stack
 .stack-work/
