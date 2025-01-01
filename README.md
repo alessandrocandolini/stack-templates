@@ -49,4 +49,4 @@ A specialized variant of `cli-template` specifically designed for [Advent of Cod
 
 ⚠️ Tokenless uploading of the code coverage reports to [Codecov](https://app.codecov.io/) is no longer supported in [codecov-action v4](https://github.com/codecov/codecov-action).
 
-To enable the GitHub Actions CI in the generated project to automatically upload test coverage reports, make sure to set the `CODECOV_TOKEN` environment variable in the GitHub repository settings. To do this, navigate to Settings > Secrets and variables > Actions > New repository secret.
+To enable the GitHub Actions CI in the generated project to automatically upload test coverage reports, make sure to set the `CODECOV_TOKEN` environment variable in the GitHub repository settings. To do this, navigate to Settings > Secrets and variables > Actions > New repository secret. The token can be found under Setting > Global Upload Token
