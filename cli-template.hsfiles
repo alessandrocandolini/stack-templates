@@ -300,8 +300,6 @@ cradle:
 
 {-# START_FILE .gitignore #-}
 # Stack
-.stack-work
-stack.yaml.lock
 .stack-work/
 .stack/
 *~
