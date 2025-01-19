@@ -1,6 +1,7 @@
 {-# START_FILE package.yaml #-}
 name:                {{name}}
 version:             0.1.0.0
+description:         "{{name}}"
 
 dependencies:
 - base >= 4.7 && < 5
@@ -29,6 +30,7 @@ ghc-options:
   - -Wincomplete-uni-patterns
   - -Wredundant-constraints
   - -Wunused-packages
+  - -O2
 
 library:
   source-dirs: src
@@ -52,13 +54,15 @@ tests:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    - -O0 # No optimization for faster test runs
     dependencies:
     - {{name}}
     - hspec
-    - hspec-discover
     - QuickCheck
     - hspec-wai
     - hspec-wai-json
+    build-tools:
+    - hspec-discover
 
 verbatim:
   cabal-version: 3.0
