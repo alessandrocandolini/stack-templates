@@ -10,7 +10,6 @@ dependencies:
 - nonempty-containers
 - aeson
 - aeson-pretty
-- generic-aeson
 - safe
 - either
 - witherable
