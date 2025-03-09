@@ -9,6 +9,8 @@ dependencies:
 - containers
 - nonempty-containers
 - async
+- stm
+- uuid
 - optparse-applicative
 - aeson
 - aeson-pretty
