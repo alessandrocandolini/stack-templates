@@ -69,12 +69,14 @@ verbatim:
 {-# OPTIONS_GHC -F -pgmF hspec-discover #-}
 
 {-# START_FILE test/ServerSpec.hs #-}
+{-# LANGUAGE QuasiQuotes #-}
 module ServerSpec where
 
 import Server (app)
 import Test.Hspec (Spec, describe, it, shouldBe)
 import Test.Hspec.QuickCheck (prop)
-import Test.Hspec.Wai (get, shouldRespondWith, with)
+import Test.Hspec.Wai (ResponseMatcher (matchStatus), get, shouldRespondWith, with)
+import Test.Hspec.Wai.JSON (json)
 import Test.QuickCheck.Property ()
 
 spec :: Spec
@@ -87,12 +89,9 @@ spec = describe "Simple test" $ do
 
   with (return app) $ do
     describe "GET /status" $ do
-      it "responds with 200" $ do
-        get "/status" `shouldRespondWith` 200
-
       it "responds with ok status" $ do
-        let response = "{\"status\":\"ok\"}"
-        get "/status" `shouldRespondWith` response
+        let response = [json|{"status":"ok"}|]
+        get "/status" `shouldRespondWith` response{matchStatus = 200}
 
 {-# START_FILE src/Server.hs #-}
 {-# LANGUAGE DataKinds #-}
