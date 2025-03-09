@@ -88,11 +88,20 @@ spec = describe "Simple test" $ do
     \l -> reverse (reverse l) == (l :: [Int])
 
   with (return app) $ do
-    describe "GET /status" $ do
+    describe "GET /health/live/" $ do
       it "responds with ok status" $ do
         let response = [json|{"status":"ok"}|]
-        get "/status" `shouldRespondWith` response{matchStatus = 200}
+        get "/health/live/" `shouldRespondWith` response{matchStatus = 200}
 
+    describe "GET /health/startup/" $ do
+      it "responds with ok status" $ do
+        let response = [json|{"status":"ok"}|]
+        get "/health/startup/" `shouldRespondWith` response{matchStatus = 200}
+
+    describe "GET /health/ready/" $ do
+      it "responds with ok status" $ do
+        let response = [json|{"status":"ok"}|]
+        get "/health/ready/" `shouldRespondWith` response{matchStatus = 200}
 {-# START_FILE src/Server.hs #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -105,7 +114,7 @@ import Data.Data (Proxy (Proxy))
 import GHC.Generics (Generic)
 import Network.Wai (Application)
 import Network.Wai.Handler.Warp (run)
-import Servant (Get, Server, (:>))
+import Servant (Get, Server, (:<|>) (..), (:>))
 import Servant.API (JSON)
 import Servant.Server (serve)
 
@@ -116,9 +125,12 @@ newtype StatusResponse = StatusResponse
 
 instance ToJSON StatusResponse
 
-type StatusEndpoint = "status" :> Get '[JSON] StatusResponse
+type HealthcheckEndpoints =
+  "health" :> "live" :> Get '[JSON] StatusResponse
+    :<|> "health" :> "startup" :> Get '[JSON] StatusResponse
+    :<|> "health" :> "ready" :> Get '[JSON] StatusResponse
 
-type API = StatusEndpoint
+type API = HealthcheckEndpoints
 
 api :: Proxy API
 api = Proxy
@@ -126,20 +138,24 @@ api = Proxy
 app :: Application
 app = serve api server
 
-startServer :: IO ()
-startServer = run 8080 app
+runApp :: IO () 
+runApp = runServer
+
+runServer :: IO ()
+runServer = run 8080 app
 
 server :: Server API
-server = pure ok where
-   ok = StatusResponse "ok"
+server = pure ok :<|> pure ok :<|> pure ok
+ where
+  ok = StatusResponse "ok"
 
 {-# START_FILE app/Main.hs #-}
 module Main where
 
-import Server
+import Server (runApp)
 
 main :: IO ()
-main = startServer
+main = runApp
 {-# START_FILE README.md #-}
 # {{name}}
 
