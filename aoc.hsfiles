@@ -631,13 +631,13 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        stack: ["3.1.1"]
-        ghc: ["9.6.6"]
+        stack: ["3.7.1"]
+        ghc: ["9.10.3"]
 
     steps:
 
     - name: Checkout repo
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Cache stack installation
       uses: actions/cache@v4
@@ -683,14 +683,14 @@ jobs:
         stack build --system-ghc --test --no-run-tests
 
     - name: Generate coverage report
-      uses: 8c6794b6/hpc-codecov-action@v3
+      uses: 8c6794b6/hpc-codecov-action@v4
       with:
         target: stack:<%name%>-test
         out: ./codecov.json
         verbose: true
 
     - name: Send coverage report
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v5
       with:
         files: ./codecov.json
         fail_ci_if_error: false # optional (default = false)
