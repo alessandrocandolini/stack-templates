@@ -7,6 +7,8 @@ dependencies:
 - base >= 4.7 && < 5
 - text
 - containers
+- unordered-containers
+- hashable
 - vector
 - split
 - safe
@@ -19,7 +21,18 @@ dependencies:
 - data-fix
 - pretty
 - comonad
+- distributive
 - adjunctions
+- machines
+- algebraic-graphs
+- ansi-terminal
+- envparse
+- req
+- bytestring
+- mtl
+- aeson
+- aeson-pretty
+- array
 
 default-extensions:
 - OverloadedStrings
@@ -58,15 +71,492 @@ tests:
     dependencies:
     - {{name}}
     - hspec
+    - hspec-discover
     - QuickCheck
     build-tools:
     - hspec-discover
 
+benchmarks:
+  {{name}}-benchmarks:
+    main: Main.hs
+    source-dirs: benchmarks
+    ghc-options:
+      - -O2
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-s
+    dependencies:
+      - {{name}}
+      - base
+      - criterion
+
 verbatim:
   cabal-version: 3.0
+
+{-# START_FILE app/Main.hs #-}
+module Main where
+
+import App
+
+main :: IO ()
+main = program
+
+{-# START_FILE src/App.hs #-}
+module App where
+
+import Args (
+  Args (Args),
+  Command (..),
+  GenerateArgs (GenerateArgs),
+  StatsArgs (StatsArgs),
+  parseArgs,
+  readInput,
+ )
+import CodeGenerator (program)
+import qualified Data.Text as T
+import Options.Applicative (handleParseResult)
+import Solutions (solutions)
+import Stats (program)
+import System.Environment (getArgs)
+
+program :: IO ()
+program =
+  getArgs >>= (handleParseResult . parseArgs) >>= program'
+
+program' :: Command -> IO ()
+program' (Run (Args n input)) = readInput input >>= runSolution n
+program' (Generate (GenerateArgs d)) = CodeGenerator.program d
+program' (GetStats (StatsArgs year export)) = Stats.program year export
+
+runSolution :: Int -> T.Text -> IO ()
+runSolution day input = case solution day of
+  Just solve -> solve input
+  Nothing -> putStrLn "day not found"
+
+solution :: Int -> Maybe (T.Text -> IO ())
+solution day
+  | day >= 1 && day <= length solutions = Just (solutions !! (day - 1))
+  | otherwise = Nothing
+
+{-# START_FILE src/Stats.hs #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingVia #-}
+
+module Stats where
+
+import Args (StatsRender (..))
+import Control.Monad ((<=<))
+import Control.Monad.Except (ExceptT (..), runExceptT)
+import Data.Aeson (ToJSON, toJSON)
+import Data.Aeson.Encode.Pretty (Config (..), Indent (Spaces), defConfig, encodePretty')
+import Data.Aeson.Types (Value)
+import Data.Bifunctor (first)
+import qualified Data.ByteString.Char8 as B8
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as TE
+import qualified Data.Text.IO as T
+import qualified Data.Text.Lazy as TL
+import qualified Data.Text.Lazy.Encoding as TLE
+import Data.Void (Void)
+import qualified Env
+import GHC.Generics (Generic)
+import Network.HTTP.Req (
+  GET (GET),
+  NoReqBody (NoReqBody),
+  bsResponse,
+  defaultHttpConfig,
+  header,
+  https,
+  req,
+  responseBody,
+  responseStatusCode,
+  runReq,
+  (/:),
+ )
+import System.Exit (exitFailure, exitSuccess)
+import Text.Megaparsec (MonadParsec (try), Parsec, anySingle, errorBundlePretty, manyTill, runParser)
+import Text.Megaparsec.Char (char, string)
+import Text.Megaparsec.Char.Lexer (decimal)
+import Text.Megaparsec.Error (ParseErrorBundle)
+
+newtype StarsCount = StarsCount {count :: Int}
+  deriving (Eq, Show, Num) via Int
+
+newtype Stats = Stats {starsCount :: StarsCount}
+  deriving (Eq, Show)
+
+renderSuccessOrError :: StatsRender -> Either StatsError Stats -> T.Text
+renderSuccessOrError _ (Left (Not200 s)) = T.pack ("Unexpected HTTP status code response: " ++ show s)
+renderSuccessOrError _ (Left (CannotFindNumberOfStars p)) = T.pack (errorBundlePretty p)
+renderSuccessOrError ConsoleRender (Right stats) = consoleRender stats
+renderSuccessOrError JsonRender (Right stats) = jsonRender stats
+
+consoleRender :: Stats -> T.Text
+consoleRender =
+  ("stars:" <>)
+    . T.pack
+    . show
+    . count
+    . starsCount
+
+jsonToText :: Value -> T.Text
+jsonToText = TL.toStrict . TLE.decodeUtf8 . encodePretty' config where
+ config = defConfig { confIndent = Spaces 2 }
+
+jsonRender :: Stats -> T.Text
+jsonRender = jsonToText . toJSON . toShieldConfig
+
+newtype StatsEnvVariables = StatsEnvVariables
+  {session :: String}
+  deriving (Eq, Show)
+
+data ShieldsConfig = ShieldsConfig
+  { schemaVersion :: Int
+  , label :: String
+  , message :: String
+  , color :: String
+  }
+  deriving (Eq, Show, Generic)
+
+instance ToJSON ShieldsConfig
+
+defaultShieldsConfig :: String -> ShieldsConfig
+defaultShieldsConfig m =
+  ShieldsConfig
+    { schemaVersion = 1
+    , label = "stars ⭐️"
+    , message = m
+    , color = "green"
+    }
+
+toShieldConfig :: Stats -> ShieldsConfig
+toShieldConfig =
+  defaultShieldsConfig
+    . show
+    . count
+    . starsCount
+
+data StatsError
+  = Not200 Int
+  | CannotFindNumberOfStars ParsingError
+  deriving (Eq, Show)
+
+statsEnvVariablesParser :: Env.Parser Env.Error StatsEnvVariables
+statsEnvVariablesParser =
+  StatsEnvVariables
+    <$> Env.var (Env.str <=< Env.nonempty) "AOC_SESSION" (Env.help "Value of the session cookie, used for login")
+
+program :: Int -> StatsRender -> IO ()
+program year render = do
+  config <- Env.parse (Env.header "AOC stats requires env variables") statsEnvVariablesParser
+  stats <- runExceptT $ program' year config
+  T.putStrLn (renderSuccessOrError render stats) *> exit stats
+ where
+  exit (Left _) = exitFailure
+  exit (Right _) = exitSuccess
+
+program' :: Int -> StatsEnvVariables -> ExceptT StatsError IO Stats
+program' year envVariables =
+  ExceptT (uncurry parseIf200 <$> fetchPage year (session envVariables))
+
+parseIf200 :: Int -> T.Text -> Either StatsError Stats
+parseIf200 200 = first CannotFindNumberOfStars . parse
+parseIf200 status = const (Left (Not200 status))
+
+fetchPage :: Int -> String -> IO (Int, T.Text)
+fetchPage year s = runReq defaultHttpConfig $ do
+  let url = https "adventofcode.com" /: T.pack (show year)
+      cookieHeader = B8.pack ("session=" ++ s)
+  response <- req GET url NoReqBody bsResponse (header "Cookie" cookieHeader)
+  let body = TE.decodeUtf8 $ responseBody response
+      status = responseStatusCode response
+  pure (status, body)
+
+-- parsing
+type Parser = Parsec Void T.Text
+type ParsingError = ParseErrorBundle T.Text Void
+
+starsCountParser :: Parser StarsCount
+starsCountParser =
+  StarsCount
+    <$> ( manyTill anySingle (try (string "<span class=\"star-count\">"))
+            *> decimal
+            <* char '*'
+            <* string "</span>"
+        )
+
+statsParser :: Parser Stats
+statsParser = Stats <$> starsCountParser
+
+parse :: T.Text -> Either ParsingError Stats
+parse = runParser statsParser "html"
+{-# START_FILE src/CodeGenerator.hs #-}
+module CodeGenerator where
+
+program :: Int -> IO()
+program _ = putStrLn "not implemented yet"
+{-# START_FILE src/Solutions.hs #-}
+module Solutions where
+
+import qualified Data.Text as T
+import Day1 (program)
+import Day2 (program)
+import Day3 (program)
+import Day4 (program)
+import Day5 (program)
+import Day6 (program)
+import Day7 (program)
+import Day8 (program)
+import Day9 (program)
+import Day10 (program)
+
+solutions :: [T.Text -> IO ()]
+solutions =
+  [ Day1.program
+  , Day2.program
+  , Day3.program
+  , Day4.program
+  , Day5.program
+  , Day6.program
+  , Day7.program
+  , Day8.program
+  , Day9.program
+  , Day10.program
+  ]
+{-# START_FILE src/Args.hs #-}
+module Args where
+
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
+import Options.Applicative
+
+data Command
+  = Run Args
+  | Generate GenerateArgs
+  | GetStats StatsArgs
+  deriving (Eq, Show)
+
+data Args = Args
+  { day :: Int
+  , input :: DayInput
+  }
+  deriving (Eq, Show)
+
+data DayInput = FromFile FilePath | FromStdInput deriving (Eq, Show)
+
+readInput :: DayInput -> IO T.Text
+readInput (FromFile f) = T.readFile f
+readInput FromStdInput = T.getContents
+
+dayInputParser :: Parser DayInput
+dayInputParser = fromFileParser <|> fromStdInputParser
+ where
+  fromFileParser =
+    FromFile
+      <$> strOption
+        ( long "filename"
+            <> short 'f'
+            <> help "Read input from the specified file"
+        )
+  fromStdInputParser =
+    flag'
+      FromStdInput
+      ( long "with-input"
+          <> help "Read input from standard input"
+      )
+
+newtype GenerateArgs = GenerateArgs Int deriving (Eq, Show)
+data StatsRender = ConsoleRender | JsonRender deriving (Eq, Show)
+data StatsArgs = StatsArgs Int StatsRender deriving (Eq, Show)
+
+argsParser :: Parser Args
+argsParser =
+  Args
+    <$> option
+      auto
+      ( long "day"
+          <> short 'd'
+          <> help "day"
+      )
+    <*> dayInputParser
+
+generateArgsParser :: Parser GenerateArgs
+generateArgsParser =
+  GenerateArgs
+    <$> option
+      auto
+      ( long "day"
+          <> short 'd'
+          <> help "day"
+      )
+statsArgsParser :: Parser StatsArgs
+statsArgsParser =
+  StatsArgs
+    <$> option
+      auto
+      ( long "year"
+          <> short 'y'
+          <> value 2024
+          <> showDefault
+          <> help "year"
+      )
+    <*> flag
+      ConsoleRender
+      JsonRender
+      ( long "json"
+          <> help "Export as json"
+      )
+
+commandParser :: Parser Command
+commandParser =
+  hsubparser
+    ( command "run" (info (Run <$> argsParser) (progDesc "run the solution to the puzzle"))
+        <> command "generate" (info (Generate <$> generateArgsParser) (progDesc "generate scaffolding from template for a given day"))
+        <> command "stats" (info (GetStats <$> statsArgsParser) (progDesc "retrieve stats from the AOC website"))
+    )
+
+withInfo :: Parser a -> String -> ParserInfo a
+withInfo p s = info (helper <*> p) (fullDesc <> progDesc s)
+
+parseArgs :: [String] -> ParserResult Command
+parseArgs = execParserPure preferences parserInfo
+ where
+  parserInfo = withInfo commandParser "Advent of code 2024 CLI"
+  preferences = prefs (disambiguate <> showHelpOnEmpty <> showHelpOnError)
+{-# START_FILE src/Day1.hs #-}
+module Day1 where
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
+
+data Answer = Answer deriving (Eq, Show)
+
+program :: T.Text -> IO ()
+program = print . logic
+
+logic :: T.Text -> Answer
+logic = const Answer
+{-# START_FILE src/Day2.hs #-}
+module Day2 where
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
+
+data Answer = Answer deriving (Eq, Show)
+
+program :: T.Text -> IO ()
+program = print . logic
+
+logic :: T.Text -> Answer
+logic = const Answer
+{-# START_FILE src/Day3.hs #-}
+module Day3 where
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
+
+data Answer = Answer deriving (Eq, Show)
+
+program :: T.Text -> IO ()
+program = print . logic
+
+logic :: T.Text -> Answer
+logic = const Answer
+{-# START_FILE src/Day4.hs #-}
+module Day4 where
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
+
+data Answer = Answer deriving (Eq, Show)
+
+program :: T.Text -> IO ()
+program = print . logic
+
+logic :: T.Text -> Answer
+logic = const Answer
+{-# START_FILE src/Day5.hs #-}
+module Day5 where
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
+
+data Answer = Answer deriving (Eq, Show)
+
+program :: T.Text -> IO ()
+program = print . logic
+
+logic :: T.Text -> Answer
+logic = const Answer
+{-# START_FILE src/Day6.hs #-}
+module Day6 where
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
+
+data Answer = Answer deriving (Eq, Show)
+
+program :: T.Text -> IO ()
+program = print . logic
+
+logic :: T.Text -> Answer
+logic = const Answer
+{-# START_FILE src/Day7.hs #-}
+module Day7 where
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
+
+data Answer = Answer deriving (Eq, Show)
+
+program :: T.Text -> IO ()
+program = print . logic
+
+logic :: T.Text -> Answer
+logic = const Answer
+{-# START_FILE src/Day8.hs #-}
+module Day8 where
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
+
+data Answer = Answer deriving (Eq, Show)
+
+program :: T.Text -> IO ()
+program = print . logic
+
+logic :: T.Text -> Answer
+logic = const Answer
+{-# START_FILE src/Day9.hs #-}
+module Day9 where
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
+
+data Answer = Answer deriving (Eq, Show)
+
+program :: T.Text -> IO ()
+program = print . logic
+
+logic :: T.Text -> Answer
+logic = const Answer
+{-# START_FILE src/Day10.hs #-}
+module Day10 where
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
+
+data Answer = Answer deriving (Eq, Show)
+
+program :: T.Text -> IO ()
+program = print . logic
+
+logic :: T.Text -> Answer
+logic = const Answer
+{-# START_FILE src/DayN.hs #-}
+module DayN where
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
+
+data Answer = Answer deriving (Eq, Show)
+
+program :: T.Text -> IO ()
+program = print . logic
+
+logic :: T.Text -> Answer
+logic = const Answer
 {-# START_FILE test/Spec.hs #-}
 {-# OPTIONS_GHC -F -pgmF hspec-discover #-}
-
 {-# START_FILE test/SpecHook.hs #-}
 module SpecHook where
 
@@ -95,223 +585,36 @@ spec = describe "Simple test" $ do
 module ArgsSpec where
 
 import Args
+import Options.Applicative (ParserResult (Failure, Success))
 import Test.Hspec
 import Test.Hspec.QuickCheck
 import Test.QuickCheck.Property
-import Options.Applicative (ParserResult(Success))
-import Options.Applicative (ParserResult(Failure))
 
-parseArgsMaybe = transform . parseArgs where
+parseArgsMaybe = transform . parseArgs
+ where
   transform (Success a) = Right a
   transform (Failure failure) = Left (show failure)
   transform _ = Left "completion"
 
 spec :: Spec
 spec = describe "Args parser" $ do
+  it "is able to parse a valid command to run the solution from file" $
+    parseArgsMaybe ["run", "-d", "1", "-f", "file"] `shouldBe` Right (Run (Args 1 (FromFile "file")))
 
-     it "is able to parse a valid command" $
-        parseArgsMaybe ["-d", "1", "-f", "file"] `shouldBe` Right (Args 1 "file")
+  it "is able to parse a valid command to run the solution from standard input" $
+    parseArgsMaybe ["run", "-d", "1", "--with-input"] `shouldBe` Right (Run (Args 1 FromStdInput))
 
-{-# START_FILE src/App.hs #-}
-module App where
+  it "is able to parse a valid command to generate the scaffolding for a new day" $
+    parseArgsMaybe ["generate", "-d", "1"] `shouldBe` Right (Generate (GenerateArgs 1))
 
-import Args 
-import Options.Applicative ( handleParseResult )
-import System.Environment (getArgs)
-import Day1 ( program )
-import Day2 ( program )
-import Day3 ( program )
-import Day4 ( program )
-import Day5 ( program )
-import Day6 ( program )
-import Day7 ( program )
-import Day8 ( program )
-import Day9 ( program )
-import Day10 ( program )
+  it "is able to parse a valid command to retrieve stats (without export)" $
+    parseArgsMaybe ["stats", "-y", "2022"] `shouldBe` Right (GetStats (StatsArgs 2022 ConsoleRender))
 
-program :: IO ()
-program =
-  getArgs >>= (handleParseResult . parseArgs) >>= program'
+  it "is able to parse a valid command to retrieve stats (with export)" $
+    parseArgsMaybe ["stats", "-y", "2022", "--json"] `shouldBe` Right (GetStats (StatsArgs 2022 JsonRender))
 
-program' :: Args -> IO ()
-program' (Args 1 f) = Day1.program f
-program' (Args 2 f) = Day2.program f
-program' (Args 3 f) = Day3.program f
-program' (Args 4 f) = Day4.program f
-program' (Args 5 f) = Day5.program f
-program' (Args 6 f) = Day6.program f
-program' (Args 7 f) = Day7.program f
-program' (Args 8 f) = Day8.program f
-program' (Args 9 f) = Day9.program f
-program' (Args 10 f) = Day10.program f
-program' _ = putStrLn "day not found"
-
-{-# START_FILE app/Main.hs #-}
-module Main where
-
-import App
-
-main :: IO ()
-main = program
-
-{-# START_FILE src/Args.hs #-}
-module Args where
-import Options.Applicative
-
-data Args = Args {
-   day :: Int,
-   input :: FilePath
-   } deriving (Eq,Show)
-
-argsParser :: Parser Args
-argsParser = Args <$> option auto
-            ( long "day"
-           <> short 'd'
-           <> help "day" ) <*> strOption ( long "filename"
-           <> short 'f'
-           <> help "filename" )
-
-withInfo :: Parser a -> String -> ParserInfo a
-withInfo p s = info (helper <*> p) (fullDesc  <> progDesc s)
-
-parseArgs :: [String] -> ParserResult Args
-parseArgs = execParserPure preferences parserInfo where
-   parserInfo = withInfo argsParser "Advent of code"
-   preferences = prefs (disambiguate <> showHelpOnEmpty <> showHelpOnError)
-
-{-# START_FILE src/Day1.hs #-}
-module Day1 where
-import qualified Data.Text as T
-import qualified Data.Text.IO as T
-
-program :: FilePath -> IO ()
-program = (=<<) print . fmap logic . T.readFile
-
-data Answer = Answer deriving (Eq, Show)
-
-logic :: T.Text -> Answer
-logic = const Answer
-
-{-# START_FILE src/Day2.hs #-}
-module Day2 where
-import qualified Data.Text as T
-import qualified Data.Text.IO as T
-
-program :: FilePath -> IO ()
-program = (=<<) print . fmap logic . T.readFile
-
-data Answer = Answer deriving (Eq, Show)
-
-logic :: T.Text -> Answer
-logic = const Answer
-{-# START_FILE src/Day3.hs #-}
-module Day3 where
-import qualified Data.Text as T
-import qualified Data.Text.IO as T
-
-program :: FilePath -> IO ()
-program = (=<<) print . fmap logic . T.readFile
-
-data Answer = Answer deriving (Eq, Show)
-
-logic :: T.Text -> Answer
-logic = const Answer
-{-# START_FILE src/Day4.hs #-}
-module Day4 where
-import qualified Data.Text as T
-import qualified Data.Text.IO as T
-
-program :: FilePath -> IO ()
-program = (=<<) print . fmap logic . T.readFile
-
-data Answer = Answer deriving (Eq, Show)
-
-logic :: T.Text -> Answer
-logic = const Answer
-{-# START_FILE src/Day5.hs #-}
-module Day5 where
-import qualified Data.Text as T
-import qualified Data.Text.IO as T
-
-program :: FilePath -> IO ()
-program = (=<<) print . fmap logic . T.readFile
-
-data Answer = Answer deriving (Eq, Show)
-
-logic :: T.Text -> Answer
-logic = const Answer
-{-# START_FILE src/Day6.hs #-}
-module Day6 where
-import qualified Data.Text as T
-import qualified Data.Text.IO as T
-
-program :: FilePath -> IO ()
-program = (=<<) print . fmap logic . T.readFile
-
-data Answer = Answer deriving (Eq, Show)
-
-logic :: T.Text -> Answer
-logic = const Answer
-{-# START_FILE src/Day7.hs #-}
-module Day7 where
-import qualified Data.Text as T
-import qualified Data.Text.IO as T
-
-program :: FilePath -> IO ()
-program = (=<<) print . fmap logic . T.readFile
-
-data Answer = Answer deriving (Eq, Show)
-
-logic :: T.Text -> Answer
-logic = const Answer
-{-# START_FILE src/Day8.hs #-}
-module Day8 where
-import qualified Data.Text as T
-import qualified Data.Text.IO as T
-
-program :: FilePath -> IO ()
-program = (=<<) print . fmap logic . T.readFile
-
-data Answer = Answer deriving (Eq, Show)
-
-logic :: T.Text -> Answer
-logic = const Answer
-{-# START_FILE src/Day9.hs #-}
-module Day9 where
-import qualified Data.Text as T
-import qualified Data.Text.IO as T
-
-program :: FilePath -> IO ()
-program = (=<<) print . fmap logic . T.readFile
-
-data Answer = Answer deriving (Eq, Show)
-
-logic :: T.Text -> Answer
-logic = const Answer
-{-# START_FILE src/Day10.hs #-}
-module Day10 where
-import qualified Data.Text as T
-import qualified Data.Text.IO as T
-
-program :: FilePath -> IO ()
-program = (=<<) print . fmap logic . T.readFile
-
-data Answer = Answer deriving (Eq, Show)
-
-logic :: T.Text -> Answer
-logic = const Answer
-{-# START_FILE src/DayN.hs #-}
-module DayN where
-import qualified Data.Text as T
-import qualified Data.Text.IO as T
-
-program :: FilePath -> IO ()
-program = (=<<) print . fmap logic . T.readFile
-
-data Answer = Answer deriving (Eq, Show)
-
-logic :: T.Text -> Answer
-logic = const Answer
+  it "is able to parse a valid command to retrieve stats (with export and without year)" $
+    parseArgsMaybe ["stats", "--json"] `shouldBe` Right (GetStats (StatsArgs 2024 JsonRender))
 {-# START_FILE test/Day1Spec.hs #-}
 module Day1Spec where
 
