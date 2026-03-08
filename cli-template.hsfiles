@@ -27,8 +27,9 @@ default-extensions:
 
 ghc-options:
   - -Wall
+  - -Werror=incomplete-patterns
+  - -Werror=incomplete-uni-patterns
   - -Wincomplete-record-updates
-  - -Wincomplete-uni-patterns
   - -Wredundant-constraints
   - -Wunused-packages
   - -O2
