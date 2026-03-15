@@ -11,6 +11,12 @@ concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
+env:
+  STACK_VERSION: "3.9.3"
+
 jobs:
   build:
     name: Build and test
@@ -26,20 +32,41 @@ jobs:
         uses: actionsflow/setup-act@v1
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+
+      - name: Setup Haskell Stack
+        id: setup
+        uses: haskell-actions/setup@v2
+        with:
+          enable-stack: true
+          stack-no-global: true
+          stack-version: ${{ env.STACK_VERSION }}
 
       - name: Compute hash for cache key
+        id: template-hash
         run: |
           HASH=$(shasum -a 256 ${{ matrix.template }}.hsfiles | awk '{ print $1 }')
-          echo "hash=$HASH" >> $GITHUB_ENV
+          echo "hash=$HASH" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Stack programs
+        uses: actions/cache@v5
+        with:
+          path: ${{ steps.setup.outputs.stack-root }}/programs
+          key: stack-programs-${{ runner.os }}-${{ env.STACK_VERSION }}-${{ matrix.template }}-${{ steps.template-hash.outputs.hash }}
+          restore-keys: |
+            stack-programs-${{ runner.os }}-${{ env.STACK_VERSION }}-${{ matrix.template }}-
 
       - name: Cache Stack dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
-            ~/.stack
-            ~/.ghcup
-          key: stack-${{ runner.os }}-${{ matrix.template }}-${{ env.hash }}
+            ${{ steps.setup.outputs.stack-root }}/build-plan
+            ${{ steps.setup.outputs.stack-root }}/indices
+            ${{ steps.setup.outputs.stack-root }}/pantry
+            ${{ steps.setup.outputs.stack-root }}/snapshots
+          key: stack-deps-${{ runner.os }}-${{ env.STACK_VERSION }}-${{ matrix.template }}-${{ steps.template-hash.outputs.hash }}
+          restore-keys: |
+            stack-deps-${{ runner.os }}-${{ env.STACK_VERSION }}-${{ matrix.template }}-
 
       - name: Generate a new project from template ${{ matrix.template }}
         run: |
