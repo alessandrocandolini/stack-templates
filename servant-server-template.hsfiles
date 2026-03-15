@@ -228,64 +228,71 @@ concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
+env:
+  STACK_VERSION: "3.9.3"
+
 jobs:
   stack:
 
-    name: ${{ matrix.os }} / ghc ${{ matrix.ghc }}
+    name: ${{ matrix.os }} / stack
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest]
-        stack: ["3.7.1"]
-        ghc: ["9.10.3"]
 
     steps:
 
     - name: Checkout repo
       uses: actions/checkout@v6
 
-    - name: Cache stack installation
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.stack/build-plan
-          ~/.stack/indices
-          ~/.stack/snapshots
-          ~/.stack/global-project/.stack-work/install
-        key: ${{ runner.os }}-ghc-${{ matrix.ghc }}-stack-${{ matrix.stack }}-${{ hashFiles('stack.yaml', 'stack.yaml.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-ghc-${{ matrix.ghc }}-stack-${{ matrix.stack }}-
-
-    - name: Cache GHC installation
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.ghcup/ghc/${{ matrix.ghc }}
-          ~/.ghcup/bin/stack-${{ matrix.stack }}
-        key: ${{ runner.os }}-ghc-${{ matrix.ghc }}-stack-${{ matrix.stack }}
-
     - name: Setup Haskell Stack
+      id: setup
       uses: haskell-actions/setup@v2
       with:
-        ghc-version: ${{ matrix.ghc }}
-        stack-version: ${{ matrix.stack }}
         enable-stack: true
+        stack-no-global: true
+        stack-version: ${{ env.STACK_VERSION }}
+
+    - name: Cache Stack programs
+      id: stack-programs-cache
+      uses: actions/cache@v5
+      with:
+        path: ${{ steps.setup.outputs.stack-root }}/programs
+        key: ${{ runner.os }}-stack-programs-${{ env.STACK_VERSION }}-${{ hashFiles('stack.yaml', 'stack.yaml.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-stack-programs-${{ env.STACK_VERSION }}-
+
+    - name: Cache Stack dependencies
+      id: stack-deps-cache
+      uses: actions/cache@v5
+      with:
+        path: |
+          ${{ steps.setup.outputs.stack-root }}/build-plan
+          ${{ steps.setup.outputs.stack-root }}/indices
+          ${{ steps.setup.outputs.stack-root }}/pantry
+          ${{ steps.setup.outputs.stack-root }}/snapshots
+        key: ${{ runner.os }}-stack-deps-${{ env.STACK_VERSION }}-${{ hashFiles('stack.yaml', 'stack.yaml.lock', 'package.yaml', '*.cabal') }}
+        restore-keys: |
+          ${{ runner.os }}-stack-deps-${{ env.STACK_VERSION }}-
 
     - name: Install dependencies
-      if: steps.cache.outputs.cache-hit != 'true' && success()
+      if: (steps.stack-programs-cache.outputs.cache-hit != 'true' || steps.stack-deps-cache.outputs.cache-hit != 'true') && success()
       timeout-minutes: 15
       run: |
-        stack build --system-ghc --test --no-run-tests --only-dependencies
+        stack build --test --no-run-tests --only-dependencies
 
     - name: Run tests with coverage
       timeout-minutes: 15
       run: |
-        stack test --system-ghc --test --coverage --fast
+        stack test --coverage --fast
 
     - name: Build
       timeout-minutes: 15
       run: |
-        stack build --system-ghc --test --no-run-tests
+        stack build --test --no-run-tests
 
     - name: Generate coverage report
       uses: 8c6794b6/hpc-codecov-action@v4
