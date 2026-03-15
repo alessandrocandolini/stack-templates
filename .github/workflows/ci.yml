@@ -21,9 +21,12 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-
-      - name: Install act for testing
-        uses: actionsflow/setup-act@v1
+      - name: Install act
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          curl -sL https://raw.githubusercontent.com/nektos/act/master/install.sh | bash -s -- -b "$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          act --version
 
       - name: Checkout
         uses: actions/checkout@v4
