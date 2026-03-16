@@ -337,3 +337,4 @@ hls.log
 cabal.project.local
 cabal.project.local~
 .ghc.environment.*
+/dist-newstyle/
