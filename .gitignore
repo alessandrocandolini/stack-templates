@@ -24,3 +24,4 @@ stack.yaml.lock
 cabal.project.local
 cabal.project.local~
 .ghc.environment.*
+/dist-newstyle/
