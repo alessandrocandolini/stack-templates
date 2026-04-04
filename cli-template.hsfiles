@@ -317,7 +317,7 @@ jobs:
         verbose: true
 
     - name: Send coverage report
-      uses: codecov/codecov-action@v5
+      uses: codecov/codecov-action@v6
       with:
         files: ./codecov.json
         fail_ci_if_error: false # optional (default = false)
