@@ -66,6 +66,19 @@ tests:
 
 verbatim:
   cabal-version: 3.0
+
+{-# START_FILE hie.yaml #-}
+cradle:
+  stack:
+    - path: "./src"
+      component: "{{name}}:lib"
+
+    - path: "./app"
+      component: "{{name}}:exe:{{name}}"
+
+    - path: "./test"
+      component: "{{name}}:test:{{name}}-test"
+
 {-# START_FILE test/Spec.hs #-}
 {-# OPTIONS_GHC -F -pgmF hspec-discover #-}
 
