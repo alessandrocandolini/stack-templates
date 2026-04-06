@@ -125,7 +125,7 @@ program =
   getArgs >>= (handleParseResult . parseArgs) >>= program'
 
 program' :: Command -> IO ()
-program' (Run (Args n input)) = readInput input >>= runSolution n
+program' (Solve (Args n input)) = readInput input >>= runSolution n
 program' (Generate (GenerateArgs d)) = CodeGenerator.program d
 program' (GetStats (StatsArgs year export)) = Stats.program year export
 
@@ -332,7 +332,7 @@ import qualified Data.Text.IO as T
 import Options.Applicative
 
 data Command
-  = Run Args
+  = Solve Args
   | Generate GenerateArgs
   | GetStats StatsArgs
   deriving (Eq, Show)
@@ -411,7 +411,7 @@ statsArgsParser =
 commandParser :: Parser Command
 commandParser =
   hsubparser
-    ( command "run" (info (Run <$> argsParser) (progDesc "run the solution to the puzzle"))
+    ( command "solve" (info (Solve <$> argsParser) (progDesc "solve the puzzle for the selected day"))
         <> command "generate" (info (Generate <$> generateArgsParser) (progDesc "generate scaffolding from template for a given day"))
         <> command "stats" (info (GetStats <$> statsArgsParser) (progDesc "retrieve stats from the AOC website"))
     )
@@ -599,11 +599,11 @@ parseArgsMaybe = transform . parseArgs
 
 spec :: Spec
 spec = describe "Args parser" $ do
-  it "is able to parse a valid command to run the solution from file" $
-    parseArgsMaybe ["run", "-d", "1", "-f", "file"] `shouldBe` Right (Run (Args 1 (FromFile "file")))
+  it "is able to parse a valid command to solve the puzzle from file" $
+    parseArgsMaybe ["solve", "-d", "1", "-f", "file"] `shouldBe` Right (Solve (Args 1 (FromFile "file")))
 
-  it "is able to parse a valid command to run the solution from standard input" $
-    parseArgsMaybe ["run", "-d", "1", "--with-input"] `shouldBe` Right (Run (Args 1 FromStdInput))
+  it "is able to parse a valid command to solve the puzzle from standard input" $
+    parseArgsMaybe ["solve", "-d", "1", "--with-input"] `shouldBe` Right (Solve (Args 1 FromStdInput))
 
   it "is able to parse a valid command to generate the scaffolding for a new day" $
     parseArgsMaybe ["generate", "-d", "1"] `shouldBe` Right (Generate (GenerateArgs 1))
@@ -886,24 +886,52 @@ To run tests with **test coverage** instrumentation,
 ```
 stack test --coverage
 ```
-which generates a textual and HTML report.
+which generates a textual and HTML report. Tests are run in the CI and test coverage reports are automatically uploaded to codecov.
 
-Note: Tests are run in the CI and test coverage reports are automatically uploaded to codecov.
-
-To **run** the executable via slack,
+To **run the executable via stack**,
 ```
 stack exec {{name}}
 ```
 or passing arguments
 ```
-stack exec {{name}} -- -d <day> -f <filename>
+stack exec {{name}} -- solve -d <day> -f <filename>
+```
+
+To copy the executable to the project root and run it as `./{{name}}`,
+```
+stack build --copy-bins --local-bin-path .
+./{{name}}
 ```
 
 To **install** the executable under `~/.local/bin`,
 ```
 stack install
 ```
-and the executable can be run with `{{name}}` assuming `~/.local/bin` is in the `$PATH` variable.
+and the executable can be run with `{{name}}` or passing arguments like
+```
+{{name}} solve -d 1 -f input
+```
+assuming `~/.local/bin` is in the `$PATH` variable.
+
+To get more insights into runtime performance, it's possible to extract information from the Haskell RTS:
+```
+{{name}} solve -d <day> -f <filename> +RTS -s -N1
+```
+
+For example, for day 1:
+```
+{{name}} solve -d 1 -f input +RTS -s -N1
+```
+
+From standard input:
+```
+{{name}} solve -d 1 --with-input +RTS -s -N1 < input
+```
+
+From `pbpaste` on macOS:
+```
+{{name}} solve -d 1 --with-input +RTS -s -N1 < <(pbpaste)
+```
 
 To run a version of **ghci** compatible with the resolver
 ```
@@ -911,7 +939,38 @@ stack ghci
 ```
 For more information about how to use `stack`, refer to the [official docs](https://docs.haskellstack.org/en/stable/).
 
-This projects uses [optparse-applicative](https://hackage.haskell.org/package/optparse-applicative) to implement command-line arguments parsing. Optparse-applicative automatically generates an helper from code. It's recommended to use the generated helper to explore all the available CLI options.
+## Available commands
+
+Thanks to [optparse-applicative](https://hackage.haskell.org/package/optparse-applicative), the CLI automatically generates documentation from code. It's recommended to use the generated helper to explore all the options. However, a summary is provided here of the most relevant options.
+
+### Solve puzzles
+
+From **file**:
+```
+{{name}} solve -d 1 -f input
+```
+
+From **standard input**:
+```
+{{name}} solve -d 1 --with-input < input
+```
+or
+```
+cat input | {{name}} solve -d 1 --with-input
+```
+
+From **pbpaste** on macOS:
+```
+{{name}} solve -d 1 --with-input < <(pbpaste)
+```
+
+### Retrieve stats
+```
+export AOC_SESSION=<insert the cookie value>
+{{name}} stats
+{{name}} stats -y <year>
+{{name}} stats -y <year> --json
+```
 {-# START_FILE .github/workflows/ci.yml #-}
 {{=<% %>=}}
 name: Compile and run tests
