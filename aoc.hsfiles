@@ -1108,3 +1108,19 @@ cabal.project.local
 cabal.project.local~
 .ghc.environment.*
 /dist-newstyle/
+
+{-# START_FILE hie.yaml #-}
+cradle:
+  stack:
+    componentsToLoad:
+      - "{{name}}:lib"
+      - "{{name}}:test:{{name}}-test"
+    components:
+      - path: "./src"
+        component: "{{name}}:lib"
+
+      - path: "./app/Main.hs"
+        component: "{{name}}:exe:{{name}}"
+
+      - path: "./test"
+        component: "{{name}}:test:{{name}}-test"
