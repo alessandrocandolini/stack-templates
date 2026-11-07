@@ -16,6 +16,7 @@ permissions:
 
 env:
   STACK_VERSION: "3.9.3"
+  ACT_VERSION: "0.2.94"
 
 jobs:
   build:
@@ -30,9 +31,9 @@ jobs:
       - name: Install act
         run: |
           mkdir -p "$HOME/.local/bin"
-          curl -sL https://raw.githubusercontent.com/nektos/act/master/install.sh | bash -s -- -b "$HOME/.local/bin"
+          curl -fsSL "https://raw.githubusercontent.com/nektos/act/v${ACT_VERSION}/install.sh" | bash -s -- -b "$HOME/.local/bin" "v${ACT_VERSION}"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-          act --version
+          "$HOME/.local/bin/act" --version
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -45,19 +46,17 @@ jobs:
           stack-no-global: true
           stack-version: ${{ env.STACK_VERSION }}
 
-      - name: Compute hash for cache key
-        id: template-hash
-        run: |
-          HASH=$(shasum -a 256 ${{ matrix.template }}.hsfiles | awk '{ print $1 }')
-          echo "hash=$HASH" >> "$GITHUB_OUTPUT"
+      # Resolve the snapshot before hashing the generated build configuration.
+      - name: Generate a new project from template ${{ matrix.template }}
+        run: stack new haskell-toy-example ${{ matrix.template }}
 
       - name: Cache Stack programs
         uses: actions/cache@v5
         with:
           path: ${{ steps.setup.outputs.stack-root }}/programs
-          key: stack-programs-${{ runner.os }}-${{ env.STACK_VERSION }}-${{ matrix.template }}-${{ steps.template-hash.outputs.hash }}
+          key: stack-programs-v2-${{ matrix.os }}-${{ runner.arch }}-${{ env.STACK_VERSION }}-${{ hashFiles('haskell-toy-example/stack.yaml', 'haskell-toy-example/stack.yaml.lock') }}
           restore-keys: |
-            stack-programs-${{ runner.os }}-${{ env.STACK_VERSION }}-${{ matrix.template }}-
+            stack-programs-v2-${{ matrix.os }}-${{ runner.arch }}-${{ env.STACK_VERSION }}-
 
       - name: Cache Stack dependencies
         uses: actions/cache@v5
@@ -67,13 +66,23 @@ jobs:
             ${{ steps.setup.outputs.stack-root }}/indices
             ${{ steps.setup.outputs.stack-root }}/pantry
             ${{ steps.setup.outputs.stack-root }}/snapshots
-          key: stack-deps-${{ runner.os }}-${{ env.STACK_VERSION }}-${{ matrix.template }}-${{ steps.template-hash.outputs.hash }}
+          key: stack-deps-v2-${{ matrix.os }}-${{ runner.arch }}-${{ env.STACK_VERSION }}-${{ matrix.template }}-${{ hashFiles('haskell-toy-example/stack.yaml', 'haskell-toy-example/stack.yaml.lock', 'haskell-toy-example/package.yaml', 'haskell-toy-example/*.cabal') }}
           restore-keys: |
-            stack-deps-${{ runner.os }}-${{ env.STACK_VERSION }}-${{ matrix.template }}-
+            stack-deps-v2-${{ matrix.os }}-${{ runner.arch }}-${{ env.STACK_VERSION }}-${{ matrix.template }}-
 
-      - name: Generate a new project from template ${{ matrix.template }}
-        run: |
-          stack new haskell-toy-example ${{ matrix.template }}
-          cd haskell-toy-example
-          stack test
-          act -n -P ubuntu-latest=catthehacker/ubuntu:act-latest
+      - name: Build and test generated project
+        working-directory: haskell-toy-example
+        run: stack test
+
+      - name: Cache act actions
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/act
+          key: act-actions-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.ACT_VERSION }}-${{ hashFiles('haskell-toy-example/.github/workflows/**') }}
+          restore-keys: |
+            act-actions-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.ACT_VERSION }}-
+
+      - name: Dry run generated workflow
+        working-directory: haskell-toy-example
+        # Fetch current refs even on a cache hit, including moved version tags.
+        run: act -n --use-new-action-cache --action-cache-path "$HOME/.cache/act" -P ubuntu-latest=catthehacker/ubuntu:act-latest
