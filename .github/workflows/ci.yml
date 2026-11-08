@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ main, feature/** ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
   workflow_dispatch: # enable manual execution
@@ -51,14 +51,28 @@ jobs:
           HASH=$(shasum -a 256 ${{ matrix.template }}.hsfiles | awk '{ print $1 }')
           echo "hash=$HASH" >> "$GITHUB_OUTPUT"
 
-      - name: Restore Stack programs
-        id: stack-programs-cache
+      - name: Generate a new project from template ${{ matrix.template }}
+        run: |
+          stack --snapshot lts-24.65 new haskell-toy-example ${{ matrix.template }}
+
+      - name: Determine GHC version
+        id: compiler
+        working-directory: haskell-toy-example
+        shell: bash
+        run: |
+          globals=$(stack --lock-file read-write --color never ls globals --global-hints 2>&1)
+          ghc_version=$(printf '%s\n' "$globals" | sed -n 's/^ghc-\([0-9][0-9.]*\)$/\1/p')
+          test -n "$ghc_version"
+          echo "version=$ghc_version" >> "$GITHUB_OUTPUT"
+
+      - name: Restore Stack compiler
+        id: stack-compiler-cache
         uses: actions/cache/restore@v6
         with:
-          path: &stack-programs-path ${{ steps.setup.outputs.stack-root }}/programs
-          key: stack-programs-${{ runner.os }}-${{ matrix.os }}-${{ env.STACK_VERSION }}-${{ matrix.template }}-${{ steps.template-hash.outputs.hash }}
-          restore-keys: |
-            stack-programs-${{ runner.os }}-${{ matrix.os }}-${{ env.STACK_VERSION }}-${{ matrix.template }}-
+          path: &stack-compiler-path |
+            ${{ steps.setup.outputs.stack-root }}/programs/*/ghc*-${{ steps.compiler.outputs.version }}
+            ${{ steps.setup.outputs.stack-root }}/programs/*/ghc*-${{ steps.compiler.outputs.version }}.installed
+          key: ${{ runner.os }}-${{ runner.arch }}-${{ matrix.os }}-stack-compiler-${{ env.STACK_VERSION }}-${{ steps.compiler.outputs.version }}
 
       - name: Restore Stack dependencies
         id: stack-deps-cache
@@ -73,21 +87,17 @@ jobs:
           restore-keys: |
             stack-deps-${{ runner.os }}-${{ matrix.os }}-${{ env.STACK_VERSION }}-${{ matrix.template }}-
 
-      - name: Generate a new project from template ${{ matrix.template }}
-        run: |
-          stack --snapshot lts-24.65 new haskell-toy-example ${{ matrix.template }}
-
       - name: Install dependencies
         working-directory: haskell-toy-example
         timeout-minutes: 15
         run: stack --lock-file read-write build --test --no-run-tests --only-dependencies
 
-      - name: Save Stack programs
-        if: steps.stack-programs-cache.outputs.cache-hit != 'true'
+      - name: Save Stack compiler
+        if: steps.stack-compiler-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v6
         with:
-          path: *stack-programs-path
-          key: ${{ steps.stack-programs-cache.outputs.cache-primary-key }}
+          path: *stack-compiler-path
+          key: ${{ steps.stack-compiler-cache.outputs.cache-primary-key }}
 
       - name: Save Stack dependencies
         if: steps.stack-deps-cache.outputs.cache-hit != 'true'
@@ -96,7 +106,7 @@ jobs:
           path: *stack-dependency-paths
           key: ${{ steps.stack-deps-cache.outputs.cache-primary-key }}
 
-      - name: Test generated project and check workflow
+      - name: Build and test generated project and check workflow
         working-directory: haskell-toy-example
         timeout-minutes: 15
         run: |

@@ -237,7 +237,7 @@ name: Compile and run tests
 
 on:
   push:
-    branches: [ main, feature/** ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
   workflow_dispatch: # enable manual execution
@@ -274,14 +274,23 @@ jobs:
         stack-no-global: true
         stack-version: ${{ env.STACK_VERSION }}
 
-    - name: Restore Stack programs
-      id: stack-programs-cache
+    - name: Determine GHC version
+      id: compiler
+      shell: bash
+      run: |
+        globals=$(stack --lock-file error-on-write --color never ls globals --global-hints 2>&1)
+        ghc_version=$(printf '%s\n' "$globals" | sed -n 's/^ghc-\([0-9][0-9.]*\)$/\1/p')
+        test -n "$ghc_version"
+        echo "version=$ghc_version" >> "$GITHUB_OUTPUT"
+
+    - name: Restore Stack compiler
+      id: stack-compiler-cache
       uses: actions/cache/restore@v6
       with:
-        path: &stack-programs-path ${{ steps.setup.outputs.stack-root }}/programs
-        key: ${{ runner.os }}-${{ matrix.os }}-stack-programs-${{ env.STACK_VERSION }}-${{ hashFiles('stack.yaml', 'stack.yaml.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-${{ matrix.os }}-stack-programs-${{ env.STACK_VERSION }}-
+        path: &stack-compiler-path |
+          ${{ steps.setup.outputs.stack-root }}/programs/*/ghc*-${{ steps.compiler.outputs.version }}
+          ${{ steps.setup.outputs.stack-root }}/programs/*/ghc*-${{ steps.compiler.outputs.version }}.installed
+        key: ${{ runner.os }}-${{ runner.arch }}-${{ matrix.os }}-stack-compiler-${{ env.STACK_VERSION }}-${{ steps.compiler.outputs.version }}
 
     - name: Restore Stack dependencies
       id: stack-deps-cache
@@ -297,17 +306,17 @@ jobs:
           ${{ runner.os }}-${{ matrix.os }}-stack-deps-${{ env.STACK_VERSION }}-
 
     - name: Install dependencies
-      if: (steps.stack-programs-cache.outputs.cache-hit != 'true' || steps.stack-deps-cache.outputs.cache-hit != 'true') && success()
+      if: (steps.stack-compiler-cache.outputs.cache-hit != 'true' || steps.stack-deps-cache.outputs.cache-hit != 'true') && success()
       timeout-minutes: 15
       run: |
         stack --lock-file error-on-write build --test --no-run-tests --only-dependencies
 
-    - name: Save Stack programs
-      if: steps.stack-programs-cache.outputs.cache-hit != 'true'
+    - name: Save Stack compiler
+      if: steps.stack-compiler-cache.outputs.cache-hit != 'true'
       uses: actions/cache/save@v6
       with:
-        path: *stack-programs-path
-        key: ${{ steps.stack-programs-cache.outputs.cache-primary-key }}
+        path: *stack-compiler-path
+        key: ${{ steps.stack-compiler-cache.outputs.cache-primary-key }}
 
     - name: Save Stack dependencies
       if: steps.stack-deps-cache.outputs.cache-hit != 'true'
@@ -316,15 +325,10 @@ jobs:
         path: *stack-dependency-paths
         key: ${{ steps.stack-deps-cache.outputs.cache-primary-key }}
 
-    - name: Run tests with coverage
+    - name: Build and test with coverage
       timeout-minutes: 15
       run: |
         stack --lock-file error-on-write test --coverage --fast
-
-    - name: Build
-      timeout-minutes: 15
-      run: |
-        stack --lock-file error-on-write build --test --no-run-tests
 
     - name: Generate coverage report
       uses: 8c6794b6/hpc-codecov-action@v4
