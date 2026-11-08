@@ -22,7 +22,7 @@ jobs:
     name: Build and test
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-24.04]
         template: [aoc, servant-server-template, cli-template]
     runs-on: ${{ matrix.os }}
 
@@ -55,9 +55,9 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ${{ steps.setup.outputs.stack-root }}/programs
-          key: stack-programs-${{ runner.os }}-${{ env.STACK_VERSION }}-${{ matrix.template }}-${{ steps.template-hash.outputs.hash }}
+          key: stack-programs-${{ runner.os }}-${{ matrix.os }}-${{ env.STACK_VERSION }}-${{ matrix.template }}-${{ steps.template-hash.outputs.hash }}
           restore-keys: |
-            stack-programs-${{ runner.os }}-${{ env.STACK_VERSION }}-${{ matrix.template }}-
+            stack-programs-${{ runner.os }}-${{ matrix.os }}-${{ env.STACK_VERSION }}-${{ matrix.template }}-
 
       - name: Cache Stack dependencies
         uses: actions/cache@v5
@@ -67,13 +67,13 @@ jobs:
             ${{ steps.setup.outputs.stack-root }}/indices
             ${{ steps.setup.outputs.stack-root }}/pantry
             ${{ steps.setup.outputs.stack-root }}/snapshots
-          key: stack-deps-${{ runner.os }}-${{ env.STACK_VERSION }}-${{ matrix.template }}-${{ steps.template-hash.outputs.hash }}
+          key: stack-deps-${{ runner.os }}-${{ matrix.os }}-${{ env.STACK_VERSION }}-${{ matrix.template }}-${{ steps.template-hash.outputs.hash }}
           restore-keys: |
-            stack-deps-${{ runner.os }}-${{ env.STACK_VERSION }}-${{ matrix.template }}-
+            stack-deps-${{ runner.os }}-${{ matrix.os }}-${{ env.STACK_VERSION }}-${{ matrix.template }}-
 
       - name: Generate a new project from template ${{ matrix.template }}
         run: |
-          stack new haskell-toy-example ${{ matrix.template }}
+          stack --snapshot lts-24.65 new haskell-toy-example ${{ matrix.template }}
           cd haskell-toy-example
           stack test
-          act -n -P ubuntu-latest=catthehacker/ubuntu:act-latest
+          act -n -P "${{ matrix.os }}=catthehacker/ubuntu:act-24.04"
