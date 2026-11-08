@@ -35,7 +35,7 @@ jobs:
           act --version
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Haskell Stack
         id: setup
@@ -53,7 +53,7 @@ jobs:
 
       - name: Restore Stack programs
         id: stack-programs-cache
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           path: &stack-programs-path ${{ steps.setup.outputs.stack-root }}/programs
           key: stack-programs-${{ runner.os }}-${{ matrix.os }}-${{ env.STACK_VERSION }}-${{ matrix.template }}-${{ steps.template-hash.outputs.hash }}
@@ -62,7 +62,7 @@ jobs:
 
       - name: Restore Stack dependencies
         id: stack-deps-cache
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           path: &stack-dependency-paths |
             ${{ steps.setup.outputs.stack-root }}/build-plan
@@ -84,14 +84,14 @@ jobs:
 
       - name: Save Stack programs
         if: steps.stack-programs-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v5
+        uses: actions/cache/save@v6
         with:
           path: *stack-programs-path
           key: ${{ steps.stack-programs-cache.outputs.cache-primary-key }}
 
       - name: Save Stack dependencies
         if: steps.stack-deps-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v5
+        uses: actions/cache/save@v6
         with:
           path: *stack-dependency-paths
           key: ${{ steps.stack-deps-cache.outputs.cache-primary-key }}

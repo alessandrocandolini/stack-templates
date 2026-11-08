@@ -47,6 +47,6 @@ A specialized variant of `cli-template` specifically designed for [Advent of Cod
 
 ## Codecov token
 
-⚠️ Tokenless uploading of code coverage reports to [Codecov](https://app.codecov.io/) is not enabled by default for these generated workflows, which use [codecov-action v6](https://github.com/codecov/codecov-action).
+⚠️ Tokenless uploading of code coverage reports to [Codecov](https://app.codecov.io/) is not enabled by default for these generated workflows, which use [codecov-action v7](https://github.com/codecov/codecov-action).
 
 To enable the GitHub Actions CI in the generated project to automatically upload test coverage reports, set the `CODECOV_TOKEN` repository secret in GitHub under Settings > Secrets and variables > Actions. The token can be found in Codecov under Settings > Global Upload Token.

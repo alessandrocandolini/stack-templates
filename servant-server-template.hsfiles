@@ -264,7 +264,7 @@ jobs:
     steps:
 
     - name: Checkout repo
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
 
     - name: Setup Haskell Stack
       id: setup
@@ -276,7 +276,7 @@ jobs:
 
     - name: Restore Stack programs
       id: stack-programs-cache
-      uses: actions/cache/restore@v5
+      uses: actions/cache/restore@v6
       with:
         path: &stack-programs-path ${{ steps.setup.outputs.stack-root }}/programs
         key: ${{ runner.os }}-${{ matrix.os }}-stack-programs-${{ env.STACK_VERSION }}-${{ hashFiles('stack.yaml', 'stack.yaml.lock') }}
@@ -285,7 +285,7 @@ jobs:
 
     - name: Restore Stack dependencies
       id: stack-deps-cache
-      uses: actions/cache/restore@v5
+      uses: actions/cache/restore@v6
       with:
         path: &stack-dependency-paths |
           ${{ steps.setup.outputs.stack-root }}/build-plan
@@ -304,14 +304,14 @@ jobs:
 
     - name: Save Stack programs
       if: steps.stack-programs-cache.outputs.cache-hit != 'true'
-      uses: actions/cache/save@v5
+      uses: actions/cache/save@v6
       with:
         path: *stack-programs-path
         key: ${{ steps.stack-programs-cache.outputs.cache-primary-key }}
 
     - name: Save Stack dependencies
       if: steps.stack-deps-cache.outputs.cache-hit != 'true'
-      uses: actions/cache/save@v5
+      uses: actions/cache/save@v6
       with:
         path: *stack-dependency-paths
         key: ${{ steps.stack-deps-cache.outputs.cache-primary-key }}
@@ -334,7 +334,7 @@ jobs:
         verbose: true
 
     - name: Send coverage report
-      uses: codecov/codecov-action@v6
+      uses: codecov/codecov-action@v7
       with:
         files: ./codecov.json
         fail_ci_if_error: false # optional (default = false)
