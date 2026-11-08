@@ -131,6 +131,7 @@ import Args (
   readInput,
  )
 import CodeGenerator (program)
+import qualified Data.IntMap as M
 import qualified Data.Text as T
 import Options.Applicative (handleParseResult)
 import Solutions (solutions)
@@ -152,9 +153,7 @@ runSolution day input = case solution day of
   Nothing -> putStrLn "day not found"
 
 solution :: Int -> Maybe (T.Text -> IO ())
-solution day
-  | day >= 1 && day <= length solutions = Just (solutions !! (day - 1))
-  | otherwise = Nothing
+solution day = M.lookup day solutions
 
 {-# START_FILE src/Stats.hs #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -316,6 +315,8 @@ program _ = putStrLn "not implemented yet"
 {-# START_FILE src/Solutions.hs #-}
 module Solutions where
 
+import Data.IntMap (IntMap)
+import qualified Data.IntMap as M
 import qualified Data.Text as T
 import Day1 (program)
 import Day2 (program)
@@ -328,19 +329,20 @@ import Day8 (program)
 import Day9 (program)
 import Day10 (program)
 
-solutions :: [T.Text -> IO ()]
+solutions :: IntMap (T.Text -> IO ())
 solutions =
-  [ Day1.program
-  , Day2.program
-  , Day3.program
-  , Day4.program
-  , Day5.program
-  , Day6.program
-  , Day7.program
-  , Day8.program
-  , Day9.program
-  , Day10.program
-  ]
+  M.fromList
+    [ (1, Day1.program)
+    , (2, Day2.program)
+    , (3, Day3.program)
+    , (4, Day4.program)
+    , (5, Day5.program)
+    , (6, Day6.program)
+    , (7, Day7.program)
+    , (8, Day8.program)
+    , (9, Day9.program)
+    , (10, Day10.program)
+    ]
 {-# START_FILE src/Args.hs #-}
 module Args where
 
