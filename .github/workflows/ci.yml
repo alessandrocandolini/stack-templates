@@ -51,18 +51,20 @@ jobs:
           HASH=$(shasum -a 256 ${{ matrix.template }}.hsfiles | awk '{ print $1 }')
           echo "hash=$HASH" >> "$GITHUB_OUTPUT"
 
-      - name: Cache Stack programs
-        uses: actions/cache@v5
+      - name: Restore Stack programs
+        id: stack-programs-cache
+        uses: actions/cache/restore@v5
         with:
-          path: ${{ steps.setup.outputs.stack-root }}/programs
+          path: &stack-programs-path ${{ steps.setup.outputs.stack-root }}/programs
           key: stack-programs-${{ runner.os }}-${{ matrix.os }}-${{ env.STACK_VERSION }}-${{ matrix.template }}-${{ steps.template-hash.outputs.hash }}
           restore-keys: |
             stack-programs-${{ runner.os }}-${{ matrix.os }}-${{ env.STACK_VERSION }}-${{ matrix.template }}-
 
-      - name: Cache Stack dependencies
-        uses: actions/cache@v5
+      - name: Restore Stack dependencies
+        id: stack-deps-cache
+        uses: actions/cache/restore@v5
         with:
-          path: |
+          path: &stack-dependency-paths |
             ${{ steps.setup.outputs.stack-root }}/build-plan
             ${{ steps.setup.outputs.stack-root }}/indices
             ${{ steps.setup.outputs.stack-root }}/pantry
@@ -74,6 +76,29 @@ jobs:
       - name: Generate a new project from template ${{ matrix.template }}
         run: |
           stack --snapshot lts-24.65 new haskell-toy-example ${{ matrix.template }}
-          cd haskell-toy-example
-          stack test
+
+      - name: Install dependencies
+        working-directory: haskell-toy-example
+        timeout-minutes: 15
+        run: stack --lock-file read-write build --test --no-run-tests --only-dependencies
+
+      - name: Save Stack programs
+        if: steps.stack-programs-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: *stack-programs-path
+          key: ${{ steps.stack-programs-cache.outputs.cache-primary-key }}
+
+      - name: Save Stack dependencies
+        if: steps.stack-deps-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: *stack-dependency-paths
+          key: ${{ steps.stack-deps-cache.outputs.cache-primary-key }}
+
+      - name: Test generated project and check workflow
+        working-directory: haskell-toy-example
+        timeout-minutes: 15
+        run: |
+          stack --lock-file error-on-write test
           act -n -P "${{ matrix.os }}=catthehacker/ubuntu:act-24.04"
