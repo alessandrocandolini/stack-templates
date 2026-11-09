@@ -610,6 +610,16 @@ program _ = print . (solve :: T.Text -> Either () Solution)
 
 solve :: T.Text -> Either a Solution
 solve = const (Right Solution)
+{-# START_FILE benchmarks/Main.hs #-}
+module Main where
+
+import Criterion.Main (bench, defaultMain, nf)
+
+main :: IO ()
+main = defaultMain
+  [ -- Replace this placeholder with benchmarks for your puzzle solutions.
+    bench "placeholder/reverse" $ nf reverse ([1 .. 1000] :: [Int])
+  ]
 {-# START_FILE test/Spec.hs #-}
 {-# OPTIONS_GHC -F -pgmF hspec-discover #-}
 {-# START_FILE test/SpecHook.hs #-}
@@ -1000,6 +1010,14 @@ To run a version of **ghci** compatible with the resolver
 stack ghci
 ```
 For more information about how to use `stack`, refer to the [official docs](https://docs.haskellstack.org/en/stable/).
+
+## Benchmarks
+
+Run the placeholder Criterion benchmark:
+```
+stack bench
+```
+Replace the example in `benchmarks/Main.hs` with benchmarks for your puzzle solutions.
 
 ## Available commands
 
