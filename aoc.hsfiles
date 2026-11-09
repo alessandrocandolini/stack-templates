@@ -437,8 +437,6 @@ statsArgsParser =
       auto
       ( long "year"
           <> short 'y'
-          <> value 2024
-          <> showDefault
           <> help "year"
       )
     <*> flag
@@ -465,7 +463,7 @@ withInfo p s = info (helper <*> p) (fullDesc <> progDesc s)
 parseArgs :: [String] -> ParserResult CommandWithGlobalOptions
 parseArgs = execParserPure preferences parserInfo
  where
-  parserInfo = withInfo commandWithGlobalOptionsParser "Advent of code 2024 CLI"
+  parserInfo = withInfo commandWithGlobalOptionsParser "Advent of code CLI"
   preferences = prefs (disambiguate <> showHelpOnEmpty <> showHelpOnError)
 {-# START_FILE src/Day1.hs #-}
 module Day1 where
@@ -640,6 +638,7 @@ spec = describe "Simple test" $ do
 module ArgsSpec where
 
 import Args
+import Data.Either (isLeft)
 import Options.Applicative (ParserResult (Failure, Success))
 import Test.Hspec
 import Test.Hspec.QuickCheck
@@ -668,8 +667,11 @@ spec = describe "Args parser" $ do
   it "is able to parse a valid command to retrieve stats (with export)" $
     parseArgsMaybe ["stats", "-y", "2022", "--json"] `shouldBe` Right (CommandWithGlobalOptions Quiet (GetStats (StatsArgs 2022 JsonRender)))
 
-  it "is able to parse a valid command to retrieve stats (with export and without year)" $
-    parseArgsMaybe ["stats", "--json"] `shouldBe` Right (CommandWithGlobalOptions Quiet (GetStats (StatsArgs 2024 JsonRender)))
+  it "requires a year when retrieving stats" $
+    parseArgsMaybe ["stats"] `shouldSatisfy` isLeft
+
+  it "requires a year when retrieving stats as JSON" $
+    parseArgsMaybe ["stats", "--json"] `shouldSatisfy` isLeft
 
   it "accepts the short verbose flag" $
     parseArgsMaybe ["-v", "solve", "-d", "1", "--with-input"]
@@ -1033,9 +1035,10 @@ Pass `-v` or `--verbose` before the command to enable verbose output:
 The flag is passed to each day's `program`; the starter solutions print the same result in either mode until you add diagnostic output.
 
 ### Retrieve stats
+
+The year is required:
 ```
 export AOC_SESSION=<insert the cookie value>
-{{name}} stats
 {{name}} stats -y <year>
 {{name}} stats -y <year> --json
 ```
