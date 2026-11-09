@@ -125,8 +125,10 @@ module App where
 import Args (
   Args (Args),
   Command (..),
+  CommandWithGlobalOptions (CommandWithGlobalOptions),
   GenerateArgs (GenerateArgs),
   StatsArgs (StatsArgs),
+  Verbosity,
   parseArgs,
   readInput,
  )
@@ -140,20 +142,23 @@ import System.Environment (getArgs)
 
 program :: IO ()
 program =
-  getArgs >>= (handleParseResult . parseArgs) >>= program'
+  getArgs >>= (handleParseResult . parseArgs) >>= unwrapGlobalOptions program'
 
-program' :: Command -> IO ()
-program' (Solve (Args n input)) = readInput input >>= runSolution n
-program' (Generate (GenerateArgs d)) = CodeGenerator.program d
-program' (GetStats (StatsArgs year export)) = Stats.program year export
+program' :: Verbosity -> Command -> IO ()
+program' verbosity (Solve (Args n input)) = readInput input >>= runSolution verbosity n
+program' _ (Generate (GenerateArgs d)) = CodeGenerator.program d
+program' _ (GetStats (StatsArgs year export)) = Stats.program year export
 
-runSolution :: Int -> T.Text -> IO ()
-runSolution day input = case solution day of
-  Just solve -> solve input
+runSolution :: Verbosity -> Int -> T.Text -> IO ()
+runSolution verbosity day input = case solution day of
+  Just solve -> solve verbosity input
   Nothing -> putStrLn "day not found"
 
-solution :: Int -> Maybe (T.Text -> IO ())
+solution :: Int -> Maybe (Verbosity -> T.Text -> IO ())
 solution day = M.lookup day solutions
+
+unwrapGlobalOptions :: (Verbosity -> Command -> a) -> CommandWithGlobalOptions -> a
+unwrapGlobalOptions f (CommandWithGlobalOptions v c) = f v c
 
 {-# START_FILE src/Stats.hs #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -315,6 +320,7 @@ program _ = putStrLn "not implemented yet"
 {-# START_FILE src/Solutions.hs #-}
 module Solutions where
 
+import Args (Verbosity)
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as M
 import qualified Data.Text as T
@@ -329,7 +335,7 @@ import Day8 (program)
 import Day9 (program)
 import Day10 (program)
 
-solutions :: IntMap (T.Text -> IO ())
+solutions :: IntMap (Verbosity -> T.Text -> IO ())
 solutions =
   M.fromList
     [ (1, Day1.program)
@@ -349,6 +355,11 @@ module Args where
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Options.Applicative
+
+data CommandWithGlobalOptions = CommandWithGlobalOptions Verbosity Command
+  deriving (Eq, Show)
+
+data Verbosity = Verbose | Quiet deriving (Eq, Show)
 
 data Command
   = Solve Args
@@ -384,6 +395,16 @@ dayInputParser = fromFileParser <|> fromStdInputParser
       ( long "with-input"
           <> help "Read input from standard input"
       )
+
+verbosityParser :: Parser Verbosity
+verbosityParser =
+  flag
+    Quiet
+    Verbose
+    ( long "verbose"
+        <> short 'v'
+        <> help "Verbose output"
+    )
 
 newtype GenerateArgs = GenerateArgs Int deriving (Eq, Show)
 data StatsRender = ConsoleRender | JsonRender deriving (Eq, Show)
@@ -435,143 +456,157 @@ commandParser =
         <> command "stats" (info (GetStats <$> statsArgsParser) (progDesc "retrieve stats from the AOC website"))
     )
 
+commandWithGlobalOptionsParser :: Parser CommandWithGlobalOptions
+commandWithGlobalOptionsParser = CommandWithGlobalOptions <$> verbosityParser <*> commandParser
+
 withInfo :: Parser a -> String -> ParserInfo a
 withInfo p s = info (helper <*> p) (fullDesc <> progDesc s)
 
-parseArgs :: [String] -> ParserResult Command
+parseArgs :: [String] -> ParserResult CommandWithGlobalOptions
 parseArgs = execParserPure preferences parserInfo
  where
-  parserInfo = withInfo commandParser "Advent of code 2024 CLI"
+  parserInfo = withInfo commandWithGlobalOptionsParser "Advent of code 2024 CLI"
   preferences = prefs (disambiguate <> showHelpOnEmpty <> showHelpOnError)
 {-# START_FILE src/Day1.hs #-}
 module Day1 where
+import Args (Verbosity)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
 data Solution = Solution deriving (Eq, Show)
 
-program :: T.Text -> IO ()
-program = print . (solve :: T.Text -> Either () Solution)
+program :: Verbosity -> T.Text -> IO ()
+program _ = print . (solve :: T.Text -> Either () Solution)
 
 solve :: T.Text -> Either a Solution
 solve = const (Right Solution)
 {-# START_FILE src/Day2.hs #-}
 module Day2 where
+import Args (Verbosity)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
 data Solution = Solution deriving (Eq, Show)
 
-program :: T.Text -> IO ()
-program = print . (solve :: T.Text -> Either () Solution)
+program :: Verbosity -> T.Text -> IO ()
+program _ = print . (solve :: T.Text -> Either () Solution)
 
 solve :: T.Text -> Either a Solution
 solve = const (Right Solution)
 {-# START_FILE src/Day3.hs #-}
 module Day3 where
+import Args (Verbosity)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
 data Solution = Solution deriving (Eq, Show)
 
-program :: T.Text -> IO ()
-program = print . (solve :: T.Text -> Either () Solution)
+program :: Verbosity -> T.Text -> IO ()
+program _ = print . (solve :: T.Text -> Either () Solution)
 
 solve :: T.Text -> Either a Solution
 solve = const (Right Solution)
 {-# START_FILE src/Day4.hs #-}
 module Day4 where
+import Args (Verbosity)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
 data Solution = Solution deriving (Eq, Show)
 
-program :: T.Text -> IO ()
-program = print . (solve :: T.Text -> Either () Solution)
+program :: Verbosity -> T.Text -> IO ()
+program _ = print . (solve :: T.Text -> Either () Solution)
 
 solve :: T.Text -> Either a Solution
 solve = const (Right Solution)
 {-# START_FILE src/Day5.hs #-}
 module Day5 where
+import Args (Verbosity)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
 data Solution = Solution deriving (Eq, Show)
 
-program :: T.Text -> IO ()
-program = print . (solve :: T.Text -> Either () Solution)
+program :: Verbosity -> T.Text -> IO ()
+program _ = print . (solve :: T.Text -> Either () Solution)
 
 solve :: T.Text -> Either a Solution
 solve = const (Right Solution)
 {-# START_FILE src/Day6.hs #-}
 module Day6 where
+import Args (Verbosity)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
 data Solution = Solution deriving (Eq, Show)
 
-program :: T.Text -> IO ()
-program = print . (solve :: T.Text -> Either () Solution)
+program :: Verbosity -> T.Text -> IO ()
+program _ = print . (solve :: T.Text -> Either () Solution)
 
 solve :: T.Text -> Either a Solution
 solve = const (Right Solution)
 {-# START_FILE src/Day7.hs #-}
 module Day7 where
+import Args (Verbosity)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
 data Solution = Solution deriving (Eq, Show)
 
-program :: T.Text -> IO ()
-program = print . (solve :: T.Text -> Either () Solution)
+program :: Verbosity -> T.Text -> IO ()
+program _ = print . (solve :: T.Text -> Either () Solution)
 
 solve :: T.Text -> Either a Solution
 solve = const (Right Solution)
 {-# START_FILE src/Day8.hs #-}
 module Day8 where
+import Args (Verbosity)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
 data Solution = Solution deriving (Eq, Show)
 
-program :: T.Text -> IO ()
-program = print . (solve :: T.Text -> Either () Solution)
+program :: Verbosity -> T.Text -> IO ()
+program _ = print . (solve :: T.Text -> Either () Solution)
 
 solve :: T.Text -> Either a Solution
 solve = const (Right Solution)
 {-# START_FILE src/Day9.hs #-}
 module Day9 where
+import Args (Verbosity)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
 data Solution = Solution deriving (Eq, Show)
 
-program :: T.Text -> IO ()
-program = print . (solve :: T.Text -> Either () Solution)
+program :: Verbosity -> T.Text -> IO ()
+program _ = print . (solve :: T.Text -> Either () Solution)
 
 solve :: T.Text -> Either a Solution
 solve = const (Right Solution)
 {-# START_FILE src/Day10.hs #-}
 module Day10 where
+import Args (Verbosity)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
 data Solution = Solution deriving (Eq, Show)
 
-program :: T.Text -> IO ()
-program = print . (solve :: T.Text -> Either () Solution)
+program :: Verbosity -> T.Text -> IO ()
+program _ = print . (solve :: T.Text -> Either () Solution)
 
 solve :: T.Text -> Either a Solution
 solve = const (Right Solution)
 {-# START_FILE src/DayN.hs #-}
 module DayN where
+import Args (Verbosity)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
 data Solution = Solution deriving (Eq, Show)
 
-program :: T.Text -> IO ()
-program = print . (solve :: T.Text -> Either () Solution)
+program :: Verbosity -> T.Text -> IO ()
+program _ = print . (solve :: T.Text -> Either () Solution)
 
 solve :: T.Text -> Either a Solution
 solve = const (Right Solution)
@@ -619,22 +654,30 @@ parseArgsMaybe = transform . parseArgs
 spec :: Spec
 spec = describe "Args parser" $ do
   it "is able to parse a valid command to solve the puzzle from file" $
-    parseArgsMaybe ["solve", "-d", "1", "-f", "file"] `shouldBe` Right (Solve (Args 1 (FromFile "file")))
+    parseArgsMaybe ["solve", "-d", "1", "-f", "file"] `shouldBe` Right (CommandWithGlobalOptions Quiet (Solve (Args 1 (FromFile "file"))))
 
   it "is able to parse a valid command to solve the puzzle from standard input" $
-    parseArgsMaybe ["solve", "-d", "1", "--with-input"] `shouldBe` Right (Solve (Args 1 FromStdInput))
+    parseArgsMaybe ["solve", "-d", "1", "--with-input"] `shouldBe` Right (CommandWithGlobalOptions Quiet (Solve (Args 1 FromStdInput)))
 
   it "is able to parse a valid command to generate the scaffolding for a new day" $
-    parseArgsMaybe ["generate", "-d", "1"] `shouldBe` Right (Generate (GenerateArgs 1))
+    parseArgsMaybe ["generate", "-d", "1"] `shouldBe` Right (CommandWithGlobalOptions Quiet (Generate (GenerateArgs 1)))
 
   it "is able to parse a valid command to retrieve stats (without export)" $
-    parseArgsMaybe ["stats", "-y", "2022"] `shouldBe` Right (GetStats (StatsArgs 2022 ConsoleRender))
+    parseArgsMaybe ["stats", "-y", "2022"] `shouldBe` Right (CommandWithGlobalOptions Quiet (GetStats (StatsArgs 2022 ConsoleRender)))
 
   it "is able to parse a valid command to retrieve stats (with export)" $
-    parseArgsMaybe ["stats", "-y", "2022", "--json"] `shouldBe` Right (GetStats (StatsArgs 2022 JsonRender))
+    parseArgsMaybe ["stats", "-y", "2022", "--json"] `shouldBe` Right (CommandWithGlobalOptions Quiet (GetStats (StatsArgs 2022 JsonRender)))
 
   it "is able to parse a valid command to retrieve stats (with export and without year)" $
-    parseArgsMaybe ["stats", "--json"] `shouldBe` Right (GetStats (StatsArgs 2024 JsonRender))
+    parseArgsMaybe ["stats", "--json"] `shouldBe` Right (CommandWithGlobalOptions Quiet (GetStats (StatsArgs 2024 JsonRender)))
+
+  it "accepts the short verbose flag" $
+    parseArgsMaybe ["-v", "solve", "-d", "1", "--with-input"]
+      `shouldBe` Right (CommandWithGlobalOptions Verbose (Solve (Args 1 FromStdInput)))
+
+  it "accepts the long verbose flag" $
+    parseArgsMaybe ["--verbose", "solve", "-d", "1", "--with-input"]
+      `shouldBe` Right (CommandWithGlobalOptions Verbose (Solve (Args 1 FromStdInput)))
 {-# START_FILE test/Day1Spec.hs #-}
 module Day1Spec where
 
@@ -982,6 +1025,12 @@ From **pbpaste** on macOS:
 ```
 {{name}} solve -d 1 --with-input < <(pbpaste)
 ```
+
+Pass `-v` or `--verbose` before the command to enable verbose output:
+```
+{{name}} -v solve -d 1 -f input
+```
+The flag is passed to each day's `program`; the starter solutions print the same result in either mode until you add diagnostic output.
 
 ### Retrieve stats
 ```
