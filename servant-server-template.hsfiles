@@ -243,7 +243,7 @@ on:
   workflow_dispatch: # enable manual execution
 
 concurrency:
-  group: ${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
