@@ -56,9 +56,8 @@ jobs:
           stack --snapshot lts-24.65 new haskell-toy-example ${{ matrix.template }}
 
       - name: Lint generated workflow
-        uses: docker://rhysd/actionlint:1.7.12
-        with:
-          args: -color haskell-toy-example/.github/workflows/ci.yml
+        working-directory: haskell-toy-example
+        run: docker run --rm -i rhysd/actionlint:1.7.12 -color - < .github/workflows/ci.yml
 
       - name: Determine GHC version
         id: compiler
