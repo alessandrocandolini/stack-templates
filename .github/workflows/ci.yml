@@ -8,7 +8,7 @@ on:
   workflow_dispatch: # enable manual execution
 
 concurrency:
-  group: ${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -54,6 +54,10 @@ jobs:
       - name: Generate a new project from template ${{ matrix.template }}
         run: |
           stack --snapshot lts-24.65 new haskell-toy-example ${{ matrix.template }}
+
+      - name: Lint generated workflow
+        working-directory: haskell-toy-example
+        run: docker run --rm -i rhysd/actionlint:1.7.12 -color - < .github/workflows/ci.yml
 
       - name: Determine GHC version
         id: compiler
