@@ -12,22 +12,22 @@ stack <options> new <project-name> alessandrocandolini/<name of the correspondin
 ```
 assuming stack is installed in the system. Here, `<options>` is any command-line option available for stack, `<project-name>` is the name of the project that will be created and `<name of the corresponding hsfile> ` is the name of a `hsfile` in this repo. For example,
 ```
-stack new hello-world alessandrocandolini/cli-template
+stack new hello-world alessandrocandolini/cli
 ```
 or
 ```
-stack --resolver nightly-2020-12-12 new hello-world alessandrocandolini/cli-template
+stack --resolver nightly-2020-12-12 new hello-world alessandrocandolini/cli
 ```
 
 Refer to [Stack templates documentation](https://docs.haskellstack.org/en/stable/GUIDE/#templates) for more information on how to provide and use templates, and to the [official stack documentation](https://docs.haskellstack.org/en/stable/GUIDE/) for a comprehensive list of available options when running stack.
 
 ## Templates
 
-### cli-template
+### cli
 
 Generates a simple CLI application with command-line arguments parsed using [optparse-applicative](https://hackage.haskell.org/package/optparse-applicative). Tests are written using [HSpec](https://hackage.haskell.org/package/hspec) with automatic test discovery powered by [hspec-discover](https://hspec.github.io/hspec-discover.html). By default, several general-purpose libraries are included (e.g., [aeson](https://hackage.haskell.org/package/aeson) for json parsing, [neat-interpolation](https://hackage.haskell.org/package/neat-interpolation) for multi-line support and string interpolation, etc.).
 
-### servant-server-template
+### server
 
 Generates a basic [Servant](https://www.servant.dev/) server running on [wai](https://hackage.haskell.org/package/wai). The server includes a single health check endpoint:
 ```
@@ -39,11 +39,11 @@ It returns a hardcoded 200 response:
 ```
 A simple test is also generated to verify the health check implementation. 
 
-The template also includes libraries similar to those in the cli-template.
+The template also includes libraries similar to those in the cli.
 
 ### AOC
 
-A specialized variant of `cli-template` specifically designed for [Advent of Code](https://adventofcode.com/) projects.
+A specialized variant of `cli` specifically designed for [Advent of Code](https://adventofcode.com/) projects.
 
 ## Codecov token
 
